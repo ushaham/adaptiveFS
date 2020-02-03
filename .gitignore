@@ -5,5 +5,7 @@
 # pycache
 **/__pycache__
 
-
+# models
+**/dqn_models
+**/pretrained_guesser_models
 
