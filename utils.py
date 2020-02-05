@@ -6,7 +6,6 @@ Created on Wed Nov 13 21:29:51 2019
 """
 
 import numpy as np
-import torch
 import gzip
 import struct
 import os

@@ -4,7 +4,7 @@ Created on Sat Dec  7 21:49:57 2019
 
 @author: urixs
 
-Environment for questionnaire
+Environment for MNIST
 
 """
 import argparse
@@ -63,7 +63,7 @@ class Guesser(nn.Module):
     def __init__(self, 
                  state_dim, 
                  hidden_dim=FLAGS.hidden_dim, 
-                 num_classes=2):
+                 num_classes=10):
         super(Guesser, self).__init__()
         
         self.layer1 = torch.nn.Sequential(
@@ -125,7 +125,7 @@ class Guesser(nn.Module):
         return torch.autograd.Variable(torch.Tensor(x))
 
 
-class Questionnaire_env(gym.Env):
+class Mnist_env(gym.Env):
      """ Questionnaire Environment class
         Args:
             case (int): which data to use
@@ -140,49 +140,20 @@ class Questionnaire_env(gym.Env):
                   episode_length=5):
          
          # Load data
-         X, y, question_names, class_names, self.scaler  = utils.load_data(case)
-         self.n_questions = X.shape[1]
-         self.question_names = question_names
+         self.n_questions = 28 * 28
+         self.X_train, self.X_test, self.y_train, self.y_test = utils.load_mnist(case=case)
          
-         # Identify columns of preliminay info variables
-         self.sex_var = np.argmax(self.question_names == 'sex')
-         self.age_var = np.argmax(self.question_names == 'age_p')
-         self.race_vars = np.argmax(self.question_names == 'hiscodi32')
+         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, 
+                                                                               self.y_train, 
+                                                                               test_size=0.008)
+         
+         self.guesser = Guesser(self.n_questions)
          
          self.episode_length = episode_length
          
-         # Randomly split data to train, validation and test sets
-         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, 
-                                                                                 y, 
-                                                                                 test_size=0.33, 
-                                                                                 random_state=42)
-         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, 
-                                                                                self.y_train, 
-                                                                                test_size=0.05, 
-                                                                                random_state=24)
-         if len(self.X_val > 20000):
-             self.X_val = self.X_val[:20000]
-             self. y_val = self.y_val[:20000]
-
-        
-        # Store indices of positive and negative patients
-         self.class_0_inds = [index for index,value in enumerate(self.y_train) if value == 0]
-         self.class_1_inds = [index for index,value in enumerate(self.y_train) if value == 1]
-         self.test_class_0_inds = [index for index,value in enumerate(self.y_test) if value == 0]
-         self.test_class_1_inds = [index for index,value in enumerate(self.y_test) if value == 1]
-         
-         self.oversample = oversample
-         
-         self.current_class = 0
-         
-         self.action_translation = {self.n_questions: "guess does not die", 
-                                    self.n_questions + 1: "guess dies"}
-         
-         self.guesser = Guesser(2 * self.n_questions)
-         
          # Load pre-trained guesser network, if needed
          if load_pretrained_guesser:
-             save_dir = './pretrained_guesser_models'
+             save_dir = './mnist_pretrained_guesser_models'
              guesser_filename = 'best_guesser.pth'
              guesser_load_path = os.path.join(save_dir, guesser_filename)
              if os.path.exists(guesser_load_path):
@@ -208,43 +179,13 @@ class Questionnaire_env(gym.Env):
          Resets 'train_guesser' flag
          """
          
-         self.state =  np.zeros(2 * self.n_questions)
+         self.state =  np.zeros(self.n_questions)
         
          if  mode == 'training':
-             if not self.oversample:
-                 self.patient = np.random.randint(self.X_train.shape[0])
-             else:
-                 if np.random.rand() < .5:
-                     ind = np.random.randint(len(self.class_0_inds))
-                     self.patient = self.class_0_inds[ind]
-                     self.current_class = 0
-                 else:
-                     ind = np.random.randint(len(self.class_1_inds))
-                     self.patient = self.class_1_inds[ind]
-                     self.current_class  = 1                
+             self.patient = np.random.randint(self.X_train.shape[0])              
          else: 
              self.patient = patient
              
-             
-         # obtain patient feature vec
-         if mode == 'training':
-             patient_vec = self.X_train[self.patient]
-         if mode == 'val':
-             patient_vec = self.X_val[self.patient]
-         if mode == 'test':
-             patient_vec = self.X_test[self.patient]
-             
-         # update state with sex, age and race info
-         if self.sex_var != None:
-             self.state[self.sex_var] = patient_vec[self.sex_var]
-             self.state[self.sex_var + self.n_questions] = 1.
-         if self.age_var != None:
-             self.state[self.age_var] = patient_vec[self.age_var]
-             self.state[self.age_var + self.n_questions] = 1.
-         if self.race_vars != None:
-             self.state[self.race_vars] = patient_vec[self.race_vars]
-             self.state[self.race_vars + self.n_questions] = 1.
-         
          self.done = False
          self.s = np.array(self.state)
          self.time = 0
@@ -260,18 +201,9 @@ class Questionnaire_env(gym.Env):
          asked will not be asked again.
          """
          mask = torch.ones(self.n_questions + 1)
-        
-         # update mask with sex, age and race entries set to zero
-         if self.sex_var != None:
-             mask[self.sex_var] = 0
-         if self.age_var != None:
-             mask[self.age_var] = 0
-         if self.race_vars != None:
-             mask[self.race_vars] = 0
          
          return mask
-             
-         
+                     
      def step(self, 
               action, 
               mode='training'):
@@ -304,14 +236,13 @@ class Questionnaire_env(gym.Env):
              elif mode == 'val':
                  next_state[action] = self.X_val[self.patient, action]
              elif mode == 'test': 
-                 next_state[action] = self.X_test[self.patient, action]
-             next_state[action + self.n_questions] += 1.             
+                 next_state[action] = self.X_test[self.patient, action]           
              self.guess = -1
              self.done = False
              
          else: # Making a guess
               # run guesser, and store guess and outcome probability
-              guesser_input = self.guesser._to_variable(self.state.reshape(-1, 2 * self.n_questions))
+              guesser_input = self.guesser._to_variable(self.state.reshape(-1, self.n_questions))
               self.guesser.train(mode=False)
               self.logits, self.probs = self.guesser(guesser_input)
               self.guess = np.argmax(self.probs.detach().numpy().squeeze())
