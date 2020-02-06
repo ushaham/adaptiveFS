@@ -21,17 +21,21 @@ import utils
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--hidden-dim",
+parser.add_argument("--state-dim",
                     type=int,
-                    default=256,
-                    help="Hidden dimension")
+                    default=129,
+                    help="State dimension")
+parser.add_argument("--embedding-dim",
+                    type=int,
+                    default=128,
+                    help="Embedding dimension")
 parser.add_argument("--lr",
                     type=float,
                     default=1e-4,
                     help="Learning rate")
 parser.add_argument("--weight_decay",
                     type=float,
-                    default=0.,
+                    default=1e-4,
                     help="l_2 weight penalty")
 parser.add_argument("--min_lr",
                     type=float,
@@ -65,8 +69,8 @@ class Guesser(nn.Module):
     def __init__(self, n_questions):
         super(Guesser, self).__init__()
         
-        self.embedding_dim = 128
-        self.state_dim = 256
+        self.embedding_dim = FLAGS.embedding_dim
+        self.state_dim =  FLAGS.state_dim
         
         # question embedding, we add one a "dummy question" for cases when guess is made at first step
         self.q_emb = nn.Embedding(num_embeddings=n_questions + 1, 

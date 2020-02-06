@@ -379,7 +379,7 @@ def get_env_dim(env) -> Tuple[int, int]:
         int: input_dim
         int: output_dim
     """
-    input_dim = 2 * env.guesser.embedding_dim
+    input_dim = env.guesser.state_dim
     output_dim = env.n_questions  + 1  
         
     return input_dim, output_dim
@@ -754,5 +754,5 @@ if __name__ == '__main__':
     show_sample_paths(2)
 
 # This script should yield test AUC results in this spirit:      
-# 0.859, 0.862, 0.861, 0.864, 0.863, 0.862
+# 0.857
     
