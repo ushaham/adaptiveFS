@@ -3,7 +3,7 @@
 **/mnist
 
 # outputs
-**/masked_images
+**/mnist_masked_images
 **/question_embeddings
 
 

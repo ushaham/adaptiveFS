@@ -28,6 +28,10 @@ parser.add_argument("--save_dir",
                     type=str,
                     default='./mnist_dqn_models',
                     help="Directory for saved models")
+parser.add_argument("--masedk_images_dir",
+                    type=str,
+                    default='./mnist_masked_images',
+                    help="Directory for saved masked images")
 parser.add_argument("--gamma",
                     type=float,
                     default=0.9,
@@ -658,12 +662,15 @@ def test():
 
     print('Test accuracy: ', np.round(acc, 3))
     
-def view_images(nun_images=10, save=False):
+def view_images(nun_images=10, save=True):
+    
+    # delete model files from previous runs
+    if os.path.exists(FLAGS.masked_images_dir):
+        shutil.rmtree(FLAGS.masked_images_dir)
      
     if save:
-        import os
-        if not os.path.exists('./masked_images'):
-            os.makedirs('./masked_images')
+        if not os.path.exists(FLAGS.masked_images_dir):
+            os.makedirs(FLAGS.masked_images_dir)
             
     for i in range(nun_images):
         patient = np.random.randint(len(env.y_test))
