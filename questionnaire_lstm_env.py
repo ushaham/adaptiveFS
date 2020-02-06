@@ -68,8 +68,8 @@ class Guesser(nn.Module):
         self.embedding_dim = 128
         self.state_dim = 256
         
-        # question embedding
-        self.q_emb = nn.Embedding(num_embeddings=n_questions, 
+        # question embedding, we add one a "dummy question" for cases when guess is made at first step
+        self.q_emb = nn.Embedding(num_embeddings=n_questions + 1, 
                                   embedding_dim=self.embedding_dim)
 
         input_dim = 2 * self.embedding_dim
@@ -271,13 +271,17 @@ class Questionnaire_env(gym.Env):
          next_state = self.update_state(action, mode)
          self.state = np.array(next_state)     
          self.s = np.array(self.state)
-                   
+          
+         '''        
          # compute reward
          self.reward = self.compute_reward(mode)
-         
+         '''
          self.time += 1
          if self.time == self.episode_length:
              self.terminate_episode()
+             
+         # compute reward
+         self.reward = self.compute_reward(mode)
         
          return self.s, self.reward, self.done, self.guess
      
@@ -298,14 +302,24 @@ class Questionnaire_env(gym.Env):
              next_state = next_state.detach().numpy()
              self.guess = -1
              self.done = False
+             self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
+             if mode == 'training':
+                 self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
+             if mode == 'val':
+                 self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
              
          else: # making a guess
+              # "dummy" forward in case a guess was made at first step, to fill buffers
+              if self.time == 0:
+                  _,  self.logits, self.probs = self.guesser(question=self.n_questions, answer=0) 
               self.guess = np.argmax(self.probs.detach().numpy().squeeze())
+              '''
               self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
               if mode == 'training':
                   self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
               if mode == 'val':
                   self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
+              '''
               self.terminate_episode()
               next_state = self.state
              
@@ -320,11 +334,10 @@ class Questionnaire_env(gym.Env):
              y_true = self.y_train[self.patient]
          
          if self.guess == -1: # no guess was made
-             return .01 * np.random.rand()
+             reward = .01 * np.random.rand()
          else:
              reward = self.correct_prob
-         #if mode == 'training': 
-         if self.train_guesser:
+         if self.train_guesser and self.done:
              # train guesser
              self.guesser.optimizer.zero_grad()             
              y = torch.Tensor([y_true]).long()

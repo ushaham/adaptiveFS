@@ -266,7 +266,6 @@ class Mnist_env(gym.Env):
              return .01 * np.random.rand()
          else:
              reward = self.correct_prob
-         #if mode == 'training': 
          if self.train_guesser:
              # train guesser
              self.guesser.optimizer.zero_grad()             
