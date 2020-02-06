@@ -31,7 +31,7 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--weight_decay",
                     type=float,
-                    default=1e-4,
+                    default=0e-4,
                     help="l_2 weight penalty")
 parser.add_argument("--min_lr",
                     type=float,

@@ -470,7 +470,7 @@ def load_networks(i_episode: int,
     
     # load guesser
     from questionnaire_lstm_env import Guesser
-    guesser = Guesser(2 * env.n_questions)
+    guesser = Guesser(env.n_questions)
     guesser_state_dict = torch.load(guesser_load_path)
     guesser.load_state_dict(guesser_state_dict)
     guesser.to(device=device)
