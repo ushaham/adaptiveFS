@@ -2,6 +2,10 @@
 **/Data
 **/mnist
 
+# outputs
+**/masked_images
+**/question_embeddings
+
 
 # pycache
 **/__pycache__
