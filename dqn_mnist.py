@@ -28,7 +28,7 @@ parser.add_argument("--save_dir",
                     type=str,
                     default='./mnist_dqn_models',
                     help="Directory for saved models")
-parser.add_argument("--masedk_images_dir",
+parser.add_argument("--masked_images_dir",
                     type=str,
                     default='./mnist_masked_images',
                     help="Directory for saved masked images")
@@ -701,8 +701,8 @@ def view_images(nun_images=10, save=True):
                                true_label=env.y_test[patient], 
                                num_steps=t,
                                save=save, 
-                               fig_num=j)
-
+                               fig_num=i,
+                               save_dir=FLAGS.masked_images_dir)
     
 if __name__ == '__main__':
     main()

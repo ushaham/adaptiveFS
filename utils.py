@@ -70,12 +70,18 @@ def read_idx(filename):
             shape = tuple(struct.unpack('>I', f.read(4))[0] for d in range(dims))
             return np.fromstring(f.read(), dtype=np.uint8).reshape(shape)
         
-def plot_mnist_digit(digit, guess, true_label, num_steps, save=True, fig_num=0):
+def plot_mnist_digit(digit, 
+                     guess, 
+                     true_label, 
+                     num_steps, 
+                     save=True, 
+                     fig_num=0,
+                     save_dir='.'):
     import matplotlib.pyplot as plt
     digit = digit.reshape(28, 28)
     fig=plt.figure()
     plt.title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=15)
     plt.imshow(digit, cmap='gray')
     if save:
-        fig.savefig('./masked_images/im_' + str(fig_num) +'.png')
+        fig.savefig('./'+ save_dir + '/im_' + str(fig_num) +'.png')
         
