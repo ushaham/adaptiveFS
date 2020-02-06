@@ -9,7 +9,6 @@ Environment for questionnaire
 """
 import argparse
 import numpy as np
-import os
 from sklearn.model_selection import train_test_split
 import gym
 import torch
@@ -27,7 +26,7 @@ parser.add_argument("--state-dim",
                     help="State dimension")
 parser.add_argument("--embedding-dim",
                     type=int,
-                    default=128,
+                    default=64,
                     help="Embedding dimension")
 parser.add_argument("--lr",
                     type=float,
