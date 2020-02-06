@@ -27,6 +27,10 @@ parser.add_argument("--save_dir",
                     type=str,
                     default='./dqn_lstm_models',
                     help="Directory for saved models")
+parser.add_argument("--q_emb_dir",
+                    type=str,
+                    default='./lstm_question_embedding',
+                    help="Directory for saved plots of question embeddinga")
 parser.add_argument("--gamma",
                     type=float,
                     default=0.95,
@@ -747,12 +751,46 @@ def show_sample_paths(n_patients=1):
                 print('Episode terminated\n')
                 break
 
+def plot_question_embeddings():
+    """ A method to plot t_SNE representation of the guesser's question embeddings"""
+     
+    # obtain question embeddings
+    guesser_filename = 'best_guesser.pth'
+    guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
+    guesser_state_dict = torch.load(guesser_load_path)
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
+    
+    # Do t-SNE
+    from sklearn.manifold import TSNE
+    X = TSNE(n_components=2).fit_transform(q_embedding)
+    
+    # delete model files from previous runs
+    if os.path.exists(FLAGS.q_emb_dir):
+        shutil.rmtree(FLAGS.q_emb_dir)
+     
+    if not os.path.exists(FLAGS.q_emb_dir):
+        os.makedirs(FLAGS.q_emb_dir)
+            
+    # Create figure
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(15, 8))
+    fig.suptitle('t-SNE embedding of the questions', fontsize=14)
+    ax = fig.add_subplot(111)
+    ax.scatter(X[:, 0], X[:, 1], c='r')
+    for i, txt in enumerate(env.question_names):
+        ax.annotate(txt, (X[:, 0][i], X[:, 1][i]))
+    plt.show()
+    fig.savefig(FLAGS.q_emb_dir + '/question embeddings.png')
+    
+    
     
 if __name__ == '__main__':
     main()
     test()
     show_sample_paths(2)
+    plot_question_embeddings()
+    
 
 # This script should yield test AUC results in this spirit:      
-# 0.857
+# 0.854
     

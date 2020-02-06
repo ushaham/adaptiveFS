@@ -174,7 +174,7 @@ class Questionnaire_env(gym.Env):
          self.action_translation = {self.n_questions: "guess does not die", 
                                     self.n_questions + 1: "guess dies"}
          
-         self.guesser = Guesser(2 * self.n_questions)
+         self.guesser = Guesser(self.n_questions)
          
          print('Initialized LSTM-questionnaire environment')                  
      

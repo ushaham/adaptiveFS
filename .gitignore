@@ -4,7 +4,7 @@
 
 # outputs
 **/mnist_masked_images
-**/question_embeddings
+**/lstm_question_embedding
 
 
 # pycache
