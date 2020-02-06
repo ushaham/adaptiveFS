@@ -12,7 +12,9 @@
 
 # models
 **/dqn_models
-**/pretrained_guesser_models
 **/dqn_lstm_models
+**/mnist_dqn_models
+**/pretrained_guesser_models
 **/pretrained_mnist_guesser_models
+
 
