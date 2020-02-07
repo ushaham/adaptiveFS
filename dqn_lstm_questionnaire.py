@@ -796,7 +796,7 @@ def plot_question_embeddings():
     # Create figure
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(15, 8))
-    fig.suptitle('t-SNE embedding of the questions', fontsize=14)
+    fig.suptitle('PCA embedding of the questions', fontsize=14)
     ax = fig.add_subplot(111)
     ax.scatter(X[:, 0], X[:, 1], c='r')
     for i, txt in enumerate(env.question_names):
