@@ -7,7 +7,6 @@ Created on Sat Dec  7 21:49:57 2019
 Environment for MNIST
 
 """
-import argparse
 import numpy as np
 import os
 from sklearn.model_selection import train_test_split
@@ -20,51 +19,24 @@ import torch.nn.functional as F
 import utils
 
 
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--hidden-dim",
-                    type=int,
-                    default=256,
-                    help="Hidden dimension")
-parser.add_argument("--lr",
-                    type=float,
-                    default=1e-4,
-                    help="Learning rate")
-parser.add_argument("--weight_decay",
-                    type=float,
-                    default=0e-4,
-                    help="l_2 weight penalty")
-parser.add_argument("--min_lr",
-                    type=float,
-                    default=1e-6,
-                    help="Minimal learning rate")
-parser.add_argument("--decay_step_size",
-                    type=int,
-                    default=12500,
-                    help="LR decay step size")
-parser.add_argument("--lr_decay_factor",
-                    type=float,
-                    default=0.1,
-                    help="LR decay factor")
-
-
-FLAGS = parser.parse_args()
-
-def lambda_rule(i_episode) -> float:
-    """ stepwise learning rate calculator """
-    exponent = int(np.floor((i_episode + 1) / FLAGS.decay_step_size))
-    return np.power(FLAGS.lr_decay_factor, exponent)
-
-
 class Guesser(nn.Module):
     """
     implements a net that guesses the outcome given the state
     """
     
     def __init__(self, 
-                 state_dim, 
-                 hidden_dim=FLAGS.hidden_dim, 
-                 num_classes=10):
+                  state_dim, 
+                 hidden_dim,
+                 num_classes=10,
+                 lr=1e-4,
+                 min_lr=1e-6,
+                 weight_decay=0.,
+                 decay_step_size=12500,
+                 lr_decay_factor=0.1):
+        
         super(Guesser, self).__init__()
+        
+        self.min_lr = min_lr
         
         self.layer1 = torch.nn.Sequential(
             torch.nn.Linear(state_dim, hidden_dim),
@@ -88,11 +60,13 @@ class Guesser(nn.Module):
         self.criterion = nn.CrossEntropyLoss()
         
         self.optimizer = torch.optim.Adam(self.parameters(), 
-                                          weight_decay=FLAGS.weight_decay,
-                                          lr=FLAGS.lr)
+                                          weight_decay=weight_decay,
+                                          lr=lr)
+        
+        self.lambda_rule = lambda x: np.power(lr_decay_factor, int(np.floor((x + 1) / decay_step_size)))
+        
         self.scheduler = lr_scheduler.LambdaLR(self.optimizer, 
-                                               lr_lambda=lambda_rule)
-
+                                               lr_lambda=self.lambda_rule)
 
     def forward(self, x):
         
@@ -110,8 +84,8 @@ class Guesser(nn.Module):
         
         self.scheduler.step()
         lr = self.optimizer.param_groups[0]['lr']
-        if lr < FLAGS.min_lr:
-            self.optimizer.param_groups[0]['lr'] = FLAGS.min_lr
+        if lr < self.min_lr:
+            self.optimizer.param_groups[0]['lr'] = self.min_lr
             lr = self.optimizer.param_groups[0]['lr']
         print('Guesser learning rate = %.7f' % lr)
     
@@ -134,10 +108,12 @@ class Mnist_env(gym.Env):
         """
         
      def __init__(self, 
-                  case=1, 
+                  flags,
                   oversample=True,
-                  load_pretrained_guesser=True,
-                  episode_length=5):
+                  load_pretrained_guesser=True):
+         
+         case = flags.case
+         episode_length = flags.episode_length
          
          # Load data
          self.n_questions = 28 * 28
@@ -146,8 +122,13 @@ class Mnist_env(gym.Env):
          self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, 
                                                                                self.y_train, 
                                                                                test_size=0.008)
-         
-         self.guesser = Guesser(self.n_questions)
+         self.guesser = Guesser(state_dim=self.n_questions,
+                                hidden_dim=flags.g_hidden_dim,
+                                lr=flags.lr,
+                                min_lr=flags.min_lr,
+                                weight_decay=flags.g_weight_decay,
+                                decay_step_size=12500,
+                                lr_decay_factor=0.1)
          
          self.episode_length = episode_length
          

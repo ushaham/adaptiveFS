@@ -7,7 +7,6 @@ Created on Sat Dec  7 21:49:57 2019
 Environment for questionnaire
 
 """
-import argparse
 import numpy as np
 from sklearn.model_selection import train_test_split
 import gym
@@ -19,43 +18,6 @@ import torch.nn.functional as F
 import utils
 
 
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--state-dim",
-                    type=int,
-                    default=129,
-                    help="State dimension")
-parser.add_argument("--embedding-dim",
-                    type=int,
-                    default=64,
-                    help="Embedding dimension")
-parser.add_argument("--lr",
-                    type=float,
-                    default=1e-4,
-                    help="Learning rate")
-parser.add_argument("--weight_decay",
-                    type=float,
-                    default=0e-4,
-                    help="l_2 weight penalty")
-parser.add_argument("--min_lr",
-                    type=float,
-                    default=1e-6,
-                    help="Minimal learning rate")
-parser.add_argument("--decay_step_size",
-                    type=int,
-                    default=12500,
-                    help="LR decay step size")
-parser.add_argument("--lr_decay_factor",
-                    type=float,
-                    default=0.1,
-                    help="LR decay factor")
-
-FLAGS = parser.parse_args()
-
-def lambda_rule(i_episode) -> float:
-    """ stepwise learning rate calculator """
-    exponent = int(np.floor((i_episode + 1) / FLAGS.decay_step_size))
-    return np.power(FLAGS.lr_decay_factor, exponent)
-
 class Guesser(nn.Module):
     """
     implements a net that guesses the outcome given the state
@@ -65,11 +27,22 @@ class Guesser(nn.Module):
     implements LSTM state update mechanism
     """
     
-    def __init__(self, n_questions):
+    def __init__(self, 
+                 embedding_dim,
+                 state_dim,
+                 n_questions,
+                 num_classes=2,
+                 lr=1e-4,
+                 min_lr=1e-6,
+                 weight_decay=0.,
+                 decay_step_size=12500,
+                 lr_decay_factor=0.1):
+        
         super(Guesser, self).__init__()
         
-        self.embedding_dim = FLAGS.embedding_dim
-        self.state_dim =  FLAGS.state_dim
+        self.embedding_dim = embedding_dim
+        self.state_dim =  state_dim
+        self.min_lr = min_lr
         
         # question embedding, we add one a "dummy question" for cases when guess is made at first step
         self.q_emb = nn.Embedding(num_embeddings=n_questions + 1, 
@@ -83,10 +56,13 @@ class Guesser(nn.Module):
         self.criterion = nn.CrossEntropyLoss()
         
         self.optimizer = torch.optim.Adam(self.parameters(), 	
-                                          weight_decay=FLAGS.weight_decay,	
-                                          lr=FLAGS.lr)	
+                                          weight_decay=weight_decay,	
+                                          lr=lr)	
+        
+        self.lambda_rule = lambda x: np.power(lr_decay_factor, int(np.floor((x + 1) / decay_step_size)))
+        
         self.scheduler = lr_scheduler.LambdaLR(self.optimizer, 	
-                                               lr_lambda=lambda_rule)
+                                               lr_lambda=self.lambda_rule)
      
     def forward(self, question, answer):
         question_embedding = self.q_emb(torch.LongTensor([question]))
@@ -107,8 +83,8 @@ class Guesser(nn.Module):
         
         self.scheduler.step()
         lr = self.optimizer.param_groups[0]['lr']
-        if lr < FLAGS.min_lr:
-            self.optimizer.param_groups[0]['lr'] = FLAGS.min_lr
+        if lr < self.min_lr:
+            self.optimizer.param_groups[0]['lr'] = self.min_lr
             lr = self.optimizer.param_groups[0]['lr']
         print('Guesser learning rate = %.7f' % lr)
     
@@ -131,9 +107,11 @@ class Questionnaire_env(gym.Env):
         """
         
      def __init__(self, 
-                  case=1, 
-                  oversample=True,
-                  episode_length=5):
+                  flags,
+                  oversample=True):
+         
+         case = flags.case
+         episode_length = flags.episode_length
          
          # Load data
          X, y, question_names, class_names, self.scaler  = utils.load_data(case)
@@ -174,7 +152,15 @@ class Questionnaire_env(gym.Env):
          self.action_translation = {self.n_questions: "guess does not die", 
                                     self.n_questions + 1: "guess dies"}
          
-         self.guesser = Guesser(self.n_questions)
+         self.guesser = Guesser(embedding_dim=flags.embedding_dim,
+                                state_dim=flags.state_dim,
+                                n_questions=self.n_questions,
+                                num_classes=2,
+                                lr=flags.lr,
+                                min_lr=flags.min_lr,
+                                weight_decay=flags.g_weight_decay,
+                                decay_step_size=12500,
+                                lr_decay_factor=0.1)
          
          print('Initialized LSTM-questionnaire environment')                  
      
@@ -305,26 +291,21 @@ class Questionnaire_env(gym.Env):
              next_state = next_state.detach().numpy()
              self.guess = -1
              self.done = False
-             self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
-             if mode == 'training':
-                 self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
-             if mode == 'val':
-                 self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
-             
          else: # making a guess
               # "dummy" forward in case a guess was made at first step, to fill buffers
               if self.time == 0:
                   _,  self.logits, self.probs = self.guesser(question=self.n_questions, answer=0) 
               self.guess = np.argmax(self.probs.detach().numpy().squeeze())
-              '''
-              self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
-              if mode == 'training':
-                  self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
-              if mode == 'val':
-                  self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
-              '''
+
               self.terminate_episode()
               next_state = self.state
+              
+         self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
+         if mode == 'training':
+             self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
+         if mode == 'val':
+             self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
+
              
          return next_state
      

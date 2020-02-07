@@ -99,6 +99,19 @@ parser.add_argument("--env",
                     type=str,
                     default="Questionnaire",
                     help="environment name: Questionnaire")
+# environment params
+parser.add_argument("--state-dim",
+                    type=int,
+                    default=129,
+                    help="State dimension")
+parser.add_argument("--embedding-dim",
+                    type=int,
+                    default=64,
+                    help="Question embedding dimension")
+parser.add_argument("--g_weight_decay",
+                    type=float,
+                    default=0e-4,
+                    help="l_2 weight penalty for guesser")
 
 FLAGS = parser.parse_args()
 
@@ -410,8 +423,7 @@ def epsilon_annealing(episode: int, max_episode: int, min_eps: float) -> float:
 
 
 # define envurinment and agent (needed for main and test)
-env = Questionnaire_env(episode_length=FLAGS.episode_length, 
-                        case=FLAGS.case)
+env = Questionnaire_env(flags=FLAGS)
 clear_threshold = 1.
     
 # define agent   
@@ -470,7 +482,16 @@ def load_networks(i_episode: int,
     
     # load guesser
     from questionnaire_lstm_env import Guesser
-    guesser = Guesser(env.n_questions)
+    guesser = Guesser(embedding_dim=FLAGS.embedding_dim,
+                      state_dim=FLAGS.state_dim,
+                      n_questions=env.n_questions,
+                      num_classes=2,
+                      lr=FLAGS.lr,
+                      min_lr=FLAGS.min_lr,
+                      weight_decay=FLAGS.g_weight_decay,
+                      decay_step_size=FLAGS.decay_step_size,
+                      lr_decay_factor=FLAGS.lr_decay_factor)
+    
     guesser_state_dict = torch.load(guesser_load_path)
     guesser.load_state_dict(guesser_state_dict)
     guesser.to(device=device)

@@ -100,6 +100,16 @@ parser.add_argument("--env",
                     type=str,
                     default="Questionnaire",
                     help="environment name: Questionnaire")
+# Environment params
+parser.add_argument("--g_hidden-dim",
+                    type=int,
+                    default=256,
+                    help="Guesser hidden dimension")
+parser.add_argument("--g_weight_decay",
+                    type=float,
+                    default=0e-4,
+                    help="Guesser l_2 weight penalty")
+
 
 FLAGS = parser.parse_args()
 
@@ -414,8 +424,7 @@ def epsilon_annealing(episode: int, max_episode: int, min_eps: float) -> float:
 
 
 # define envurinment and agent (needed for main and test)
-env = Mnist_env(episode_length=FLAGS.episode_length, 
-                        case=FLAGS.case)
+env = Mnist_env(flags=FLAGS)
 clear_threshold = 1.
     
 # define agent   
@@ -474,7 +483,14 @@ def load_networks(i_episode: int,
     
     # load guesser
     from mnist_env import Guesser
-    guesser = Guesser(env.n_questions)
+    guesser = Guesser(state_dim=env.n_questions,
+                      hidden_dim=FLAGS.g_hidden_dim,
+                      lr=FLAGS.lr,
+                      min_lr=FLAGS.min_lr,
+                      weight_decay=FLAGS.g_weight_decay,
+                      decay_step_size=FLAGS.decay_step_size,
+                      lr_decay_factor=FLAGS.lr_decay_factor)
+    
     guesser_state_dict = torch.load(guesser_load_path)
     guesser.load_state_dict(guesser_state_dict)
     guesser.to(device=device)
