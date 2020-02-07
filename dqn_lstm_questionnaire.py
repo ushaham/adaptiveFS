@@ -761,8 +761,9 @@ def plot_question_embeddings():
     q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
     
     # Do t-SNE
-    from sklearn.manifold import TSNE
-    X = TSNE(n_components=2).fit_transform(q_embedding)
+    from sklearn.decomposition import PCA
+    pca = PCA(n_components=2, svd_solver='full')
+    X = pca.fit_transform(q_embedding)
     
     # delete model files from previous runs
     if os.path.exists(FLAGS.q_emb_dir):
