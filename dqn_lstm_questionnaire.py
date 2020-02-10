@@ -93,7 +93,7 @@ parser.add_argument("--episode_length",
                     help="Episode length")
 parser.add_argument("--case",
                     type=int,
-                    default=122,
+                    default=123,
                     help="Which data to use")
 parser.add_argument("--env",
                     type=str,
@@ -773,7 +773,7 @@ def show_sample_paths(n_patients=1):
                 break
 
 def plot_question_embeddings():
-    """ A method to plot t_SNE representation of the guesser's question embeddings"""
+    """ A method to plot PCA representation of the guesser's question embeddings"""
      
     # obtain question embeddings
     guesser_filename = 'best_guesser.pth'
@@ -781,7 +781,7 @@ def plot_question_embeddings():
     guesser_state_dict = torch.load(guesser_load_path)
     q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
     
-    # Do t-SNE
+    # Do PCA
     from sklearn.decomposition import PCA
     pca = PCA(n_components=2, svd_solver='full')
     X = pca.fit_transform(q_embedding)
@@ -804,6 +804,32 @@ def plot_question_embeddings():
     plt.show()
     fig.savefig(FLAGS.q_emb_dir + '/question embeddings.png')
     
+def print_nns(n_neighbors=3):
+    """ A method to print the nearest neighbors of each question in the embedding space"""
+     
+    # obtain question embeddings
+    guesser_filename = 'best_guesser.pth'
+    guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
+    guesser_state_dict = torch.load(guesser_load_path)
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
+        
+    # Find nearest neighbors
+    from sklearn.neighbors import NearestNeighbors
+    nbrs = NearestNeighbors(n_neighbors=env.n_questions, 
+                            algorithm='ball_tree').fit(q_embedding)
+    distances, indices = nbrs.kneighbors(q_embedding)
+    threshold = np.percentile(distances[:,1], 10)
+    
+    # Print to console
+    print('Nearest neighbors for every question: ')
+    for i in range(env.n_questions):
+        printed = False
+        for j in range(1, env.n_questions):
+            if distances[i, j] < threshold:
+                if not printed:
+                    printed = True
+                    print(env.question_names[i], ':')
+                print('\t', env.question_names[indices[i, j]])
     
     
 if __name__ == '__main__':

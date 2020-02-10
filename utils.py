@@ -27,6 +27,19 @@ def load_data (case):
         class_names = ['no', 'yes']
         print('loaded data,  {} rows, {} columns'.format(n, d))
         
+    if case == 123: # 100 questions
+        data_file = "./Data/small_data100.npy"
+        X = np.load(data_file)
+        n, d = X.shape
+        y = np.load('./Data/labels.npy')
+        # standardize features
+        scaler = MinMaxScaler()
+        X = scaler.fit_transform(X) * 2 - 1
+        question_names = np.load('./Data/names_small100.npy')
+        class_names = ['no', 'yes']
+        print('loaded data,  {} rows, {} columns'.format(n, d))
+        
+        
     return X, y, question_names, class_names, scaler
 
 def load_mnist(case=1):
