@@ -761,11 +761,38 @@ def show_sample_paths(n_patients=1):
                 print('Episode terminated\n')
                 break
 
+def predict_interactively():
+    """ Making predictions in interactive fashion """
+    
+    print('Loading best networks')
+    env.guesser, agent.dqn = load_networks(i_episode='best')
+    
+    state = env.reset(mode='interactive', 
+                          train_guesser=False)
+    mask = env.reset_mask()
+    
+    # run episode
+    for t in range(FLAGS.episode_length):
+
+        # select action from policy
+        action = agent.get_action(state, eps=0, mask=mask)
+        mask[action] = 0
+        print('Step {}: '.format(t+1))
+        # take the action
+        state, reward, done, guess = env.step(action, mode='interactive') 
+        
+        if guess != -1:
+            print('Ready to make a guess: Prob(y=1)={:1.3f}, Guess: y={}'.format(env.outcome_prob, guess))
+                                       
+        if done:
+            print('Episode terminated\n')
+            break
     
 if __name__ == '__main__':
     main()
     test()
     show_sample_paths(2)
+    # predict_interactively()
 
 # This script should yield test AUC results in this spirit:      
 # 0.859, 0.862, 0.861, 0.864, 0.863, 0.862

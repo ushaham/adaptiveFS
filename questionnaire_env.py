@@ -181,7 +181,7 @@ class Questionnaire_env(gym.Env):
                patient=0,
                train_guesser=True):
          """ 
-         Args: mode: training / val / test
+         Args: mode: training / val / test / interactive
                patient (int): index of patient
                train_guesser (Boolean): flag indicating whether to train guesser network in this episode
          
@@ -216,17 +216,40 @@ class Questionnaire_env(gym.Env):
              patient_vec = self.X_val[self.patient]
          if mode == 'test':
              patient_vec = self.X_test[self.patient]
+         if mode == 'interactive':
+             patient_vec = None
              
          # update state with sex, age and race info
-         if self.sex_var != None:
-             self.state[self.sex_var] = patient_vec[self.sex_var]
+         if mode == 'interactive':
+             sex = input('Please enter your sex (1=Male, 2=Female): \n')
+             sex = float(sex)
+             sex_scaled = utils.scale_individual_value(sex, self.sex_var, self.scaler)
+             
+             age = input('Please enter your age:\n')
+             age = float(age)
+             age_scaled = utils.scale_individual_value(age, self.age_var, self.scaler)
+             
+             race = input('Please enter your race (0=Non-Hispanic, 1=Hispanic):\n')
+             race = float(race)
+             race_scaled = utils.scale_individual_value(race, self.race_vars, self.scaler)
+             
+             self.state[self.sex_var] = sex_scaled
              self.state[self.sex_var + self.n_questions] = 1.
-         if self.age_var != None:
-             self.state[self.age_var] = patient_vec[self.age_var]
+             self.state[self.age_var] = age_scaled
              self.state[self.age_var + self.n_questions] = 1.
-         if self.race_vars != None:
-             self.state[self.race_vars] = patient_vec[self.race_vars]
-             self.state[self.race_vars + self.n_questions] = 1.
+             self.state[self.race_vars] = race_scaled
+             self.state[self.race_vars + self.n_questions] = 1.                    
+             
+         else:
+             if self.sex_var != None:
+                 self.state[self.sex_var] = patient_vec[self.sex_var]
+                 self.state[self.sex_var + self.n_questions] = 1.
+             if self.age_var != None:
+                 self.state[self.age_var] = patient_vec[self.age_var]
+                 self.state[self.age_var + self.n_questions] = 1.
+             if self.race_vars != None:
+                 self.state[self.race_vars] = patient_vec[self.race_vars]
+                 self.state[self.race_vars + self.n_questions] = 1.
          
          self.done = False
          self.s = np.array(self.state)
@@ -282,12 +305,18 @@ class Questionnaire_env(gym.Env):
          next_state = np.array(self.state)
          
          if action < self.n_questions: # Not making a guess
-             if  mode == 'training':
-                 next_state[action] = self.X_train[self.patient, action]        
-             elif mode == 'val':
-                 next_state[action] = self.X_val[self.patient, action]
-             elif mode == 'test': 
-                 next_state[action] = self.X_test[self.patient, action]
+             if mode == 'interactive':
+                 str_ = 'Please enter {} :\n'.format(self.question_names[action])
+                 ans = input(str_)
+                 ans = float(ans)
+                 next_state[action] = utils.scale_individual_value(ans, action, self.scaler)
+             else:
+                 if  mode == 'training':
+                     next_state[action] = self.X_train[self.patient, action]        
+                 elif mode == 'val':
+                     next_state[action] = self.X_val[self.patient, action]
+                 elif mode == 'test': 
+                     next_state[action] = self.X_test[self.patient, action]
              next_state[action + self.n_questions] += 1.             
              self.guess = -1
              self.done = False
@@ -310,6 +339,8 @@ class Questionnaire_env(gym.Env):
          """ Compute the reward """
          
          if mode == 'test':
+             return None
+         if mode == 'interactive':
              return None
          if mode == 'training':
              y_true = self.y_train[self.patient]

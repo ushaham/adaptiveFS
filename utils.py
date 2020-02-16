@@ -98,3 +98,6 @@ def plot_mnist_digit(digit,
     if save:
         fig.savefig('./'+ save_dir + '/im_' + str(fig_num) +'.png')
         
+def scale_individual_value(val, ind, scaler):
+    return (val - scaler.data_min_[ind]) / (scaler.data_max_[ind] - scaler.data_min_[ind]) * 2. - 1.
+        
