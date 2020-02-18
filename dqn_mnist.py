@@ -270,7 +270,7 @@ class Agent(object):
             self.dqn.train(mode=False)
             scores = self.get_Q(states)
             _, argmax = torch.max(scores.data * mask, 1)
-            return int(argmax.cpu().numpy())
+            return int(argmax.item())
 
     def get_Q(self, states: np.ndarray) -> torch.FloatTensor:
         """Returns `Q-value`
@@ -607,7 +607,7 @@ def val(i_episode: int,
             state, reward, done, guess = env.step(action, mode='val')
             
             if guess != -1:
-                y_hat_val[i] = np.argmax(env.probs.cpu().detach().cpu().numpy())
+                y_hat_val[i] = torch.argmax(env.probs).item()
 
             
             ep_reward += reward

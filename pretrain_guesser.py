@@ -226,7 +226,7 @@ def val(i_episode : int,
         guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
-        y_hat_val_prob[i] = probs.detach().cpu().numpy().squeeze()[1]
+        y_hat_val_prob[i] = probs.squeeze()[1].item()
 
     roc_auc_score_ = roc_auc_score(y_val,  y_hat_val_prob)
     save_network(i_episode, roc_auc_score_)

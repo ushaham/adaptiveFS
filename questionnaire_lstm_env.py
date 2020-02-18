@@ -291,23 +291,23 @@ class Questionnaire_env(gym.Env):
              elif mode == 'test': 
                  answer = self.X_test[self.patient, action]
              next_state,  self.logits, self.probs = self.guesser(action, answer)   
-             next_state = next_state.detach().cpu().numpy()
+             next_state = next_state.data.numpy()
              self.guess = -1
              self.done = False
          else: # making a guess
               # "dummy" forward in case a guess was made at first step, to fill buffers
               if self.time == 0:
                   _,  self.logits, self.probs = self.guesser(question=self.n_questions, answer=0) 
-              self.guess = np.argmax(self.probs.detach().cpu().numpy().squeeze())
+              self.guess = torch.argmax(self.probs.squeeze()).item()
 
               self.terminate_episode()
               next_state = self.state
               
-         self.outcome_prob = self.probs.detach().cpu().numpy().squeeze()[1]
+         self.outcome_prob = self.probs.squeeze()[1].item()
          if mode == 'training':
-             self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_train[self.patient]]
+             self.correct_prob = self.probs.squeeze()[self.y_train[self.patient]].item()
          if mode == 'val':
-             self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_val[self.patient]]
+             self.correct_prob = self.probs.squeeze()[self.y_val[self.patient]].item()
 
              
          return next_state

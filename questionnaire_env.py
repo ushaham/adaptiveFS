@@ -328,11 +328,11 @@ class Questionnaire_env(gym.Env):
                   guesser_input = guesser_input.cuda()
               self.guesser.train(mode=False)
               self.logits, self.probs = self.guesser(guesser_input)
-              self.guess = np.argmax(self.probs.detach().cpu().numpy().squeeze())
-              self.outcome_prob = self.probs.detach().cpu().numpy().squeeze()[1]
+              self.guess = torch.argmax(self.probs.squeeze()).item()
+              self.outcome_prob = self.probs.squeeze()[1].item()
               if mode == 'training':
                   # store probability of true outcome for reward calculation
-                  self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_train[self.patient]]
+                  self.correct_prob = self.probs.squeeze()[self.y_train[self.patient]].item()
               self.terminate_episode()
              
          return next_state

@@ -210,7 +210,7 @@ def val(i_episode : int,
         guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
-        y_hat_val[i] = np.argmax(probs.cpu().detach().cpu().numpy())
+        y_hat_val[i] = torch.argmax(probs).item()
 
     confmat = confusion_matrix(y_val,  y_hat_val)
     acc = np.sum(np.diag(confmat)) / len(y_val)
