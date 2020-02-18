@@ -185,7 +185,7 @@ class Questionnaire_env(gym.Env):
          
          # Reset state
          self.guesser.reset_states()
-         self.state = self.guesser.lstm_h.detach().numpy()
+         self.state = self.guesser.lstm_h.data.numpy()
         
          if  mode == 'training':
              if not self.oversample:
