@@ -65,6 +65,9 @@ class Guesser(nn.Module):
                                                lr_lambda=self.lambda_rule)
      
     def forward(self, question, answer):
+        if torch.cuda.is_available():
+            question = question.cuda()
+            answer = answer.cuda()
         question_embedding = self.q_emb(torch.LongTensor([question]))
         answer_vec = torch.unsqueeze(torch.ones(self.embedding_dim) * answer, 0)
         x = torch.cat((question_embedding, 
@@ -288,23 +291,23 @@ class Questionnaire_env(gym.Env):
              elif mode == 'test': 
                  answer = self.X_test[self.patient, action]
              next_state,  self.logits, self.probs = self.guesser(action, answer)   
-             next_state = next_state.detach().numpy()
+             next_state = next_state.detach().cpu().numpy()
              self.guess = -1
              self.done = False
          else: # making a guess
               # "dummy" forward in case a guess was made at first step, to fill buffers
               if self.time == 0:
                   _,  self.logits, self.probs = self.guesser(question=self.n_questions, answer=0) 
-              self.guess = np.argmax(self.probs.detach().numpy().squeeze())
+              self.guess = np.argmax(self.probs.detach().cpu().numpy().squeeze())
 
               self.terminate_episode()
               next_state = self.state
               
-         self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
+         self.outcome_prob = self.probs.detach().cpu().numpy().squeeze()[1]
          if mode == 'training':
-             self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
+             self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_train[self.patient]]
          if mode == 'val':
-             self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_val[self.patient]]
+             self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_val[self.patient]]
 
              
          return next_state

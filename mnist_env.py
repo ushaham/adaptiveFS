@@ -224,13 +224,15 @@ class Mnist_env(gym.Env):
          else: # Making a guess
               # run guesser, and store guess and outcome probability
               guesser_input = self.guesser._to_variable(self.state.reshape(-1, self.n_questions))
+              if torch.cuda.is_available():
+                  guesser_input = guesser_input.cuda()
               self.guesser.train(mode=False)
               self.logits, self.probs = self.guesser(guesser_input)
-              self.guess = np.argmax(self.probs.detach().numpy().squeeze())
-              self.outcome_prob = self.probs.detach().numpy().squeeze()[1]
+              self.guess = np.argmax(self.probs.detach().cpu().numpy().squeeze())
+              self.outcome_prob = self.probs.detach().cpu().numpy().squeeze()[1]
               if mode == 'training':
                   # store probability of true outcome for reward calculation
-                  self.correct_prob = self.probs.detach().numpy().squeeze()[self.y_train[self.patient]]
+                  self.correct_prob = self.probs.detach().cpu().numpy().squeeze()[self.y_train[self.patient]]
               self.terminate_episode()
              
          return next_state

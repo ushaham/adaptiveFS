@@ -49,7 +49,7 @@ parser.add_argument("--val_interval",
                     default=1000,
                     help="Interval for calculating validation reward and saving model")
 
-FLAGS = parser.parse_args()
+FLAGS = parser.parse_args(args=[])
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -182,6 +182,8 @@ def main():
      x = X_train[patient]
      x = np.concatenate([x, np.ones(n_questions)])
      guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
+     if torch.cuda.is_available():
+         guesser_input = guesser_input.cuda()
      guesser.train(mode=False)
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]
@@ -224,7 +226,7 @@ def val(i_episode : int,
         guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
-        y_hat_val_prob[i] = probs.detach().numpy().squeeze()[1]
+        y_hat_val_prob[i] = probs.detach().cpu().numpy().squeeze()[1]
 
     roc_auc_score_ = roc_auc_score(y_val,  y_hat_val_prob)
     save_network(i_episode, roc_auc_score_)

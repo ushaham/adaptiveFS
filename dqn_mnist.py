@@ -111,7 +111,7 @@ parser.add_argument("--g_weight_decay",
                     help="Guesser l_2 weight penalty")
 
 
-FLAGS = parser.parse_args()
+FLAGS = parser.parse_args(args=[])
 
 
 
@@ -280,6 +280,8 @@ class Agent(object):
             torch.FloatTensor: 2-D Tensor of shape (n, output_dim)
         """
         states = self._to_variable(states.reshape(-1, self.input_dim))
+        if torch.cuda.is_available():
+            states = states.cuda()
         self.dqn.train(mode=False)
         return self.dqn(states)
 

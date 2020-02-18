@@ -49,7 +49,7 @@ parser.add_argument("--val_interval",
                     default=1000,
                     help="Interval for calculating validation reward and saving model")
 
-FLAGS = parser.parse_args()
+FLAGS = parser.parse_args(args=[])
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -167,6 +167,8 @@ def main():
      patient = np.random.randint(X_train.shape[0])
      x = X_train[patient]
      guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
+     if torch.cuda.is_available():
+         guesser_input = guesser_input.cuda()
      guesser.train(mode=False)
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]
@@ -208,7 +210,7 @@ def val(i_episode : int,
         guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
-        y_hat_val[i] = np.argmax(probs.cpu().detach().numpy())
+        y_hat_val[i] = np.argmax(probs.cpu().detach().cpu().numpy())
 
     confmat = confusion_matrix(y_val,  y_hat_val)
     acc = np.sum(np.diag(confmat)) / len(y_val)
