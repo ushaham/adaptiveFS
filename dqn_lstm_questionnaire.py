@@ -331,8 +331,8 @@ def train_helper(agent: Agent,
     done = np.array([x.done for x in minibatch])
 
     Q_predict = agent.get_Q(states)
-    Q_target = Q_predict.clone().data.numpy()
-    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.numpy(), axis=1) * ~done
+    Q_target = Q_predict.clone().data.cpu().numpy()
+    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.cpu().numpy(), axis=1) * ~done
     Q_target = agent._to_variable(Q_target)
 
     return agent.train(Q_predict, Q_target)
@@ -781,7 +781,7 @@ def plot_question_embeddings():
     guesser_filename = 'best_guesser.pth'
     guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
     guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].cpu().numpy()
     
     # Do PCA
     from sklearn.decomposition import PCA
@@ -813,7 +813,7 @@ def print_nns(n_neighbors=3):
     guesser_filename = 'best_guesser.pth'
     guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
     guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].numpy()
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].cpu().numpy()
         
     # Find nearest neighbors
     from sklearn.neighbors import NearestNeighbors

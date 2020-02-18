@@ -3,7 +3,7 @@ A repository for adaptive feature selection using Reinforcement Learning.
 
 Requirements:
 python 3.7.1
-pytorch 1.0.1
+pytorch 1.4
 
 The code was not tested on GPU 
 

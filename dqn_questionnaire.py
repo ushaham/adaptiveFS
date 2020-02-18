@@ -260,7 +260,7 @@ class Agent(object):
             self.dqn.train(mode=False)
             scores = self.get_Q(states)
             _, argmax = torch.max(scores.data * mask, 1)
-            return int(argmax.numpy())
+            return int(argmax.cpu().numpy())
 
     def get_Q(self, states: np.ndarray) -> torch.FloatTensor:
         """Returns `Q-value`
@@ -322,8 +322,8 @@ def train_helper(agent: Agent,
     done = np.array([x.done for x in minibatch])
 
     Q_predict = agent.get_Q(states)
-    Q_target = Q_predict.clone().data.numpy()
-    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.numpy(), axis=1) * ~done
+    Q_target = Q_predict.clone().data.cpu().numpy()
+    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.cpu().numpy(), axis=1) * ~done
     Q_target = agent._to_variable(Q_target)
 
     return agent.train(Q_predict, Q_target)
