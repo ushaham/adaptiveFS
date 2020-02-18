@@ -110,11 +110,13 @@ class Questionnaire_env(gym.Env):
         
      def __init__(self, 
                   flags,
+                  device, 
                   oversample=True,
                   load_pretrained_guesser=True):
          
          case = flags.case
          episode_length = flags.episode_length
+         self.device = device
          
          # Load data
          X, y, question_names, class_names, self.scaler  = utils.load_data(case)
@@ -324,8 +326,7 @@ class Questionnaire_env(gym.Env):
          else: # Making a guess
               # run guesser, and store guess and outcome probability
               guesser_input = self.guesser._to_variable(self.state.reshape(-1, 2 * self.n_questions))
-              if torch.cuda.is_available():
-                  guesser_input = guesser_input.cuda()
+              guesser_input = guesser_input.to(device=self.device)
               self.guesser.train(mode=False)
               self.logits, self.probs = self.guesser(guesser_input)
               self.guess = torch.argmax(self.probs.squeeze()).item()

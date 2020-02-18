@@ -109,11 +109,13 @@ class Mnist_env(gym.Env):
         
      def __init__(self, 
                   flags,
+                  device,
                   oversample=True,
                   load_pretrained_guesser=True):
          
          case = flags.case
          episode_length = flags.episode_length
+         self.device = device
          
          # Load data
          self.n_questions = 28 * 28

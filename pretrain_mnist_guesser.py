@@ -167,8 +167,7 @@ def main():
      patient = np.random.randint(X_train.shape[0])
      x = X_train[patient]
      guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
-     if torch.cuda.is_available():
-         guesser_input = guesser_input.cuda()
+     guesser_input = guesser_input.to(device=device)
      guesser.train(mode=False)
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]

@@ -23,6 +23,7 @@ import utils
 
 from sklearn.metrics import confusion_matrix
 
+
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--save_dir",
                     type=str,
@@ -114,6 +115,8 @@ parser.add_argument("--g_weight_decay",
 FLAGS = parser.parse_args(args=[])
 
 
+#set device
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class DQN(torch.nn.Module):
     def __init__(self, 
@@ -280,8 +283,7 @@ class Agent(object):
             torch.FloatTensor: 2-D Tensor of shape (n, output_dim)
         """
         states = self._to_variable(states.reshape(-1, self.input_dim))
-        if torch.cuda.is_available():
-            states = states.cuda()
+        states = states.to(device=device)
         self.dqn.train(mode=False)
         return self.dqn(states)
 
@@ -426,7 +428,8 @@ def epsilon_annealing(episode: int, max_episode: int, min_eps: float) -> float:
 
 
 # define envurinment and agent (needed for main and test)
-env = Mnist_env(flags=FLAGS)
+env = Mnist_env(flags=FLAGS,
+                device=device)
 clear_threshold = 1.
     
 # define agent   
@@ -435,8 +438,6 @@ agent = Agent(input_dim,
               output_dim, 
               FLAGS.hidden_dim)    
 
-#set device
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 agent.dqn.to(device=device)
 env.guesser.to(device=device)
     

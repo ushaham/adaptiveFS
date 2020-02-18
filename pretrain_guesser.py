@@ -182,8 +182,7 @@ def main():
      x = X_train[patient]
      x = np.concatenate([x, np.ones(n_questions)])
      guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
-     if torch.cuda.is_available():
-         guesser_input = guesser_input.cuda()
+     guesser_input = guesser_input.to(device=device)
      guesser.train(mode=False)
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]

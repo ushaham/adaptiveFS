@@ -65,11 +65,13 @@ class Guesser(nn.Module):
                                                lr_lambda=self.lambda_rule)
      
     def forward(self, question, answer):
+        if torch.cuda.is_available():
+            question = question.cuda()
+            answer = answer.cuda()
         question_embedding = self.q_emb(torch.LongTensor([question]))
         answer_vec = torch.unsqueeze(torch.ones(self.embedding_dim) * answer, 0)
         x = torch.cat((question_embedding, 
                        answer_vec), dim=-1)
-        x.to(device=self.device)
         self.lstm_h, self.lstm_c = self.lstm(x, (self.lstm_h, self.lstm_c))  
         logits = self.affine(self.lstm_h)
         probs = F.softmax(logits, dim=1)
@@ -109,12 +111,10 @@ class Questionnaire_env(gym.Env):
         
      def __init__(self, 
                   flags,
-                  device,
                   oversample=True):
          
          case = flags.case
-         episode_length = flags.episode_length         
-         self.device = device
+         episode_length = flags.episode_length
          
          # Load data
          X, y, question_names, class_names, self.scaler  = utils.load_data(case)
