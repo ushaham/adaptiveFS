@@ -137,7 +137,8 @@ X, y, question_names, class_names, scaler  = utils.load_data(case=FLAGS.case)
 n_questions = X.shape[1]
 
 # Initialize guesser
-guesser = Guesser(2 * n_questions)         
+guesser = Guesser(2 * n_questions)   
+guesser.to(device=device)      
 
 X_train, X_test, y_train, y_test = train_test_split(X, 
                                                      y, 
@@ -187,6 +188,7 @@ def main():
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]
      y = torch.Tensor([y_true]).long()
+     y = y.to(device=device)
      guesser.optimizer.zero_grad()             
      guesser.train(mode=True)
      loss = guesser.criterion(logits, y) 
@@ -223,6 +225,7 @@ def val(i_episode : int,
         x = X_val[i]
         x = np.concatenate([x, np.ones(n_questions)])
         guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
+        guesser_input = guesser_input.to(device=device)
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
         y_hat_val_prob[i] = probs.squeeze()[1].item()

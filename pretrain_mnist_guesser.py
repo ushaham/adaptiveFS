@@ -137,7 +137,9 @@ def save_network(i_episode, acc=None):
 n_questions = 28 * 28
 
 # Initialize guesser
-guesser = Guesser(n_questions)         
+guesser = Guesser(n_questions)  
+guesser.to(device=device)      
+       
 
 X_train, X_test, y_train, y_test = utils.load_mnist(case=FLAGS.case)
  
@@ -173,6 +175,7 @@ def main():
      logits, probs = guesser(guesser_input)
      y_true = y_train[patient]
      y = torch.Tensor([y_true]).long()
+     y = y.to(device=device)
      guesser.optimizer.zero_grad()             
      guesser.train(mode=True)
      loss = guesser.criterion(logits, y) 
@@ -208,6 +211,7 @@ def val(i_episode : int,
     for i in range(len(X_val)):
         x = X_val[i]
         guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
+        guesser_input = guesser_input.to(device=device)
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)
         y_hat_val[i] = torch.argmax(probs).item()
