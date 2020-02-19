@@ -781,7 +781,7 @@ def plot_question_embeddings():
     guesser_filename = 'best_guesser.pth'
     guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
     guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.numpy()
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.cpu().numpy()
     
     # Do PCA
     from sklearn.decomposition import PCA
@@ -813,7 +813,7 @@ def print_nns(n_neighbors=3):
     guesser_filename = 'best_guesser.pth'
     guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
     guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.numpy()
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.cpu().numpy()
         
     # Find nearest neighbors
     from sklearn.neighbors import NearestNeighbors

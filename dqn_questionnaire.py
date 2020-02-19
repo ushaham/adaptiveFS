@@ -323,8 +323,8 @@ def train_helper(agent: Agent,
     done = np.array([x.done for x in minibatch])
 
     Q_predict = agent.get_Q(states)
-    Q_target = Q_predict.clone().data.numpy()
-    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.numpy(), axis=1) * ~done
+    Q_target = Q_predict.clone().data.cpu().numpy()
+    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.cpu().numpy(), axis=1) * ~done
     Q_target = agent._to_variable(Q_target)
     Q_target = Q_target.to(device=device)
 
