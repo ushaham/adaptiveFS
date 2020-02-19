@@ -13,11 +13,12 @@ from collections import deque
 import os
 import shutil
 
-import utils
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+import utils
+
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--save_dir",
@@ -90,7 +91,6 @@ class Guesser(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), 
                                           weight_decay=FLAGS.weight_decay,
                                           lr=FLAGS.lr)
-
 
     def forward(self, x):
         

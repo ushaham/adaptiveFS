@@ -16,11 +16,11 @@ from collections import namedtuple
 from collections import deque
 from typing import List, Tuple
 from itertools import count
+from sklearn.metrics import confusion_matrix, roc_auc_score
+
 
 from questionnaire_env import Questionnaire_env
-
-
-from sklearn.metrics import confusion_matrix, roc_auc_score
+from questionnaire_env import Guesser
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--save_dir",
@@ -326,6 +326,7 @@ def train_helper(agent: Agent,
     Q_target = Q_predict.clone().data.numpy()
     Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.numpy(), axis=1) * ~done
     Q_target = agent._to_variable(Q_target)
+    Q_target = Q_target.to(device=device)
 
     return agent.train(Q_predict, Q_target)
 
@@ -474,7 +475,6 @@ def load_networks(i_episode: int,
     dqn_load_path = os.path.join(FLAGS.save_dir, dqn_filename)
     
     # load guesser
-    from questionnaire_env import Guesser
     guesser = Guesser(state_dim=2 * env.n_questions,
                       hidden_dim=FLAGS.g_hidden_dim,
                       lr=FLAGS.lr,

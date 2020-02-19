@@ -250,6 +250,8 @@ class Questionnaire_env(gym.Env):
              mask[self.age_var] = 0
          if self.race_vars != None:
              mask[self.race_vars] = 0
+             
+         mask = mask.to(device=self.device)
          
          return mask
              
@@ -328,6 +330,7 @@ class Questionnaire_env(gym.Env):
              # train guesser
              self.guesser.optimizer.zero_grad()             
              y = torch.Tensor([y_true]).long()
+             y = y.to(device = self.device)
              self.guesser.train(mode=True)
              self.guesser.loss = self.guesser.criterion(self.logits, y)        
              self.guesser.loss.backward()

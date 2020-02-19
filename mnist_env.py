@@ -184,6 +184,7 @@ class Mnist_env(gym.Env):
          asked will not be asked again.
          """
          mask = torch.ones(self.n_questions + 1)
+         mask = mask.to(device=self.device)
          
          return mask
                      
@@ -255,6 +256,7 @@ class Mnist_env(gym.Env):
              # train guesser
              self.guesser.optimizer.zero_grad()             
              y = torch.Tensor([y_true]).long()
+             y = y.to(device = self.device)
              self.guesser.train(mode=True)
              self.guesser.loss = self.guesser.criterion(self.logits, y)        
              self.guesser.loss.backward()
