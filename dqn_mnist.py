@@ -668,7 +668,7 @@ def test():
             state, reward, done, guess = env.step(action, mode='test') 
             
             if guess != -1:
-                y_hat_test_prob[i] = env.prob1
+                y_hat_test_prob[i] = torch.argmax(env.probs).item()
                                            
             if done:
                 break
