@@ -36,9 +36,12 @@ class Guesser(nn.Module):
                  min_lr=1e-6,
                  weight_decay=0.,
                  decay_step_size=12500,
-                 lr_decay_factor=0.1):
+                 lr_decay_factor=0.1,
+                 device=torch.device("cpu")):
         
         super(Guesser, self).__init__()
+        
+        self.device = device
         
         self.embedding_dim = embedding_dim
         self.state_dim =  state_dim
@@ -63,21 +66,25 @@ class Guesser(nn.Module):
         
         self.scheduler = lr_scheduler.LambdaLR(self.optimizer, 	
                                                lr_lambda=self.lambda_rule)
+        
+        
      
     def forward(self, question, answer):
-        question_embedding = self.q_emb(torch.LongTensor([question]))
+        ind = torch.LongTensor([question]).to(device=self.device)
+        question_embedding = self.q_emb(ind)
         answer_vec = torch.unsqueeze(torch.ones(self.embedding_dim) * answer, 0)
+        question_embedding = question_embedding.to(device=self.device)
+        answer_vec = answer_vec.to(device=self.device)
         x = torch.cat((question_embedding, 
                        answer_vec), dim=-1)
-        x.to(device=self.device)
         self.lstm_h, self.lstm_c = self.lstm(x, (self.lstm_h, self.lstm_c))  
         logits = self.affine(self.lstm_h)
         probs = F.softmax(logits, dim=1)
         return self.lstm_h, logits, probs
     
     def reset_states(self):
-        self.lstm_h = torch.zeros(1, self.state_dim)
-        self.lstm_c = torch.zeros(1, self.state_dim)
+        self.lstm_h = torch.zeros(1, self.state_dim).to(device=self.device)
+        self.lstm_c = torch.zeros(1, self.state_dim).to(device=self.device)
 
     def update_learning_rate(self):
         """ Learning rate updater """
@@ -163,7 +170,8 @@ class Questionnaire_env(gym.Env):
                                 min_lr=flags.min_lr,
                                 weight_decay=flags.g_weight_decay,
                                 decay_step_size=12500,
-                                lr_decay_factor=0.1)
+                                lr_decay_factor=0.1,
+                                device=self.device)
          
          print('Initialized LSTM-questionnaire environment')                  
      
@@ -185,7 +193,7 @@ class Questionnaire_env(gym.Env):
          
          # Reset state
          self.guesser.reset_states()
-         self.state = self.guesser.lstm_h.data.numpy()
+         self.state = self.guesser.lstm_h.data.cpu().numpy()
         
          if  mode == 'training':
              if not self.oversample:
@@ -293,7 +301,7 @@ class Questionnaire_env(gym.Env):
              elif mode == 'test': 
                  answer = self.X_test[self.patient, action]
              next_state,  self.logits, self.probs = self.guesser(action, answer)   
-             next_state = next_state.data.numpy()
+             next_state = next_state.data.cpu().numpy()
              self.guess = -1
              self.done = False
          else: # making a guess
