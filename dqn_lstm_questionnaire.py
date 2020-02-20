@@ -492,7 +492,8 @@ def load_networks(i_episode: int,
                       min_lr=FLAGS.min_lr,
                       weight_decay=FLAGS.g_weight_decay,
                       decay_step_size=FLAGS.decay_step_size,
-                      lr_decay_factor=FLAGS.lr_decay_factor)
+                      lr_decay_factor=FLAGS.lr_decay_factor,
+                      device=device)
     
     guesser_state_dict = torch.load(guesser_load_path)
     guesser.load_state_dict(guesser_state_dict)
