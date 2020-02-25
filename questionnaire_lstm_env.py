@@ -54,6 +54,10 @@ class Guesser(nn.Module):
         input_dim = 2 * self.embedding_dim
         self.lstm = nn.LSTMCell(input_size=input_dim, hidden_size=self.state_dim)
         self.affine = nn.Linear(self.state_dim, 2)
+        
+        self.initial_c = nn.Parameter(torch.randn(1, self.state_dim), requires_grad=True).to(device=self.device)
+        self.initial_h = nn.Parameter(torch.randn(1, self.state_dim), requires_grad=True).to(device=self.device)
+
         self.reset_states()
         
         self.criterion = nn.CrossEntropyLoss()
@@ -66,8 +70,6 @@ class Guesser(nn.Module):
         
         self.scheduler = lr_scheduler.LambdaLR(self.optimizer, 	
                                                lr_lambda=self.lambda_rule)
-        
-        
      
     def forward(self, question, answer):
         ind = torch.LongTensor([question]).to(device=self.device)
@@ -83,9 +85,9 @@ class Guesser(nn.Module):
         return self.lstm_h, logits, probs
     
     def reset_states(self):
-        self.lstm_h = torch.zeros(1, self.state_dim).to(device=self.device)
-        self.lstm_c = torch.zeros(1, self.state_dim).to(device=self.device)
-
+        self.lstm_h = (torch.zeros(1, self.state_dim) +  self.initial_h).to(device=self.device)
+        self.lstm_c = (torch.zeros(1, self.state_dim) +  self.initial_c).to(device=self.device)
+        
     def update_learning_rate(self):
         """ Learning rate updater """
         
