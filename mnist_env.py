@@ -136,7 +136,7 @@ class Mnist_env(gym.Env):
          
          # Load pre-trained guesser network, if needed
          if load_pretrained_guesser:
-             save_dir = './mnist_pretrained_guesser_models'
+             save_dir = './pretrained_mnist_guesser_models'
              guesser_filename = 'best_guesser.pth'
              guesser_load_path = os.path.join(save_dir, guesser_filename)
              if os.path.exists(guesser_load_path):

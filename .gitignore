@@ -17,4 +17,8 @@
 **/pretrained_guesser_models
 **/pretrained_mnist_guesser_models
 
+dqn_questionnaire_op.py
+questionnaire_env_op.py
+calibration.py
+
 
