@@ -102,7 +102,7 @@ parser.add_argument("--env",
 # environment params
 parser.add_argument("--state-dim",
                     type=int,
-                    default=129,
+                    default=128,
                     help="State dimension")
 parser.add_argument("--embedding-dim",
                     type=int,
