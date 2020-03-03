@@ -220,11 +220,12 @@ def val(i_episode : int,
 
     confmat = confusion_matrix(y_val,  y_hat_val)
     acc = np.sum(np.diag(confmat)) / len(y_val)
-    save_network(i_episode, acc)
+    #save_network(i_episode, acc)
     
     if acc > best_val_acc:
         print('New best Acc acheievd, saving best model')
         save_network(i_episode='best')
+        save_network(i_episode, acc)
         
         return acc
     

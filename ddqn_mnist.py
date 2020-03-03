@@ -56,7 +56,7 @@ parser.add_argument("--batch_size",
                     help="Mini-batch size")
 parser.add_argument("--hidden-dim",
                     type=int,
-                    default=128,
+                    default=256,
                     help="Hidden dimension")
 parser.add_argument("--capacity",
                     type=int,
@@ -648,10 +648,11 @@ def val(i_episode: int,
      
     confmat = confusion_matrix(env.y_val,  y_hat_val)
     acc = np.sum(np.diag(confmat)) / len(env.y_val)
-    save_networks(i_episode, acc)
+    #save_networks(i_episode, acc)
     
     if acc > best_val_acc:
         print('New best acc acheievd, saving best model')
+        save_networks(i_episode, acc)
         save_networks(i_episode='best')
         
         return acc
@@ -711,6 +712,9 @@ def test():
     print('Test accuracy: ', np.round(acc, 3))
     
 def view_images(nun_images=10, save=True):
+    
+    print('Loading best networks')
+    env.guesser, agent.dqn = load_networks(i_episode='best')
     
     # delete model files from previous runs
     if os.path.exists(FLAGS.masked_images_dir):
