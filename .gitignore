@@ -5,6 +5,7 @@
 # outputs
 **/mnist_masked_images
 **/lstm_question_embedding
+**/calibration
 
 
 # pycache
@@ -12,13 +13,18 @@
 
 # models
 **/dqn_models
+**/ddqn_models
+**/ddqn_lstm_models
 **/dqn_lstm_models
 **/mnist_dqn_models
+**/mnist_ddqn_models
 **/pretrained_guesser_models
 **/pretrained_mnist_guesser_models
 
 dqn_questionnaire_op.py
 questionnaire_env_op.py
 calibration.py
+ddqn_lstm_questionnaire.py
+ddqn_mnist.py
 
 

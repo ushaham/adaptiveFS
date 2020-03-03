@@ -142,9 +142,16 @@ class Questionnaire_env(gym.Env):
          if len(self.X_val > 20000):
              self.X_val = self.X_val[:20000]
              self. y_val = self.y_val[:20000]
+         
+         # Compute correlations with target   
+         correls = np.zeros(self.n_questions + 1)
+         for i in range(self.n_questions):
+             correls[i] = np.abs(np.corrcoef(self.y_train, self.X_train[:,i])[0,1])
+         correls[self.n_questions] = .1
+         self.action_probs = correls / np.sum(correls)
 
         
-        # Store indices of positive and negative patients
+         # Store indices of positive and negative patients
          self.class_0_inds = [index for index,value in enumerate(self.y_train) if value == 0]
          self.class_1_inds = [index for index,value in enumerate(self.y_train) if value == 1]
          self.test_class_0_inds = [index for index,value in enumerate(self.y_test) if value == 0]

@@ -124,6 +124,15 @@ class Mnist_env(gym.Env):
          self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, 
                                                                                self.y_train, 
                                                                                test_size=0.008)
+         
+         # Compute correlations with target   
+         correls = np.zeros(self.n_questions + 1)
+         for i in range(self.n_questions):
+             correls[i] = np.abs(np.corrcoef(self.y_train, self.X_train[:,i])[0,1])
+         correls[self.n_questions] = .1
+         correls = np.nan_to_num(correls)
+         self.action_probs = correls / np.sum(correls)
+         
          self.guesser = Guesser(state_dim=self.n_questions,
                                 hidden_dim=flags.g_hidden_dim,
                                 lr=flags.lr,

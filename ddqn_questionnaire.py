@@ -19,22 +19,22 @@ from itertools import count
 from sklearn.metrics import confusion_matrix, roc_auc_score
 
 
-from questionnaire_lstm_env import Questionnaire_env
-from questionnaire_lstm_env import Guesser
+from questionnaire_env import Questionnaire_env
+from questionnaire_env import Guesser
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--save_dir",
                     type=str,
-                    default='./dqn_lstm_models',
+                    default='./ddqn_models',
                     help="Directory for saved models")
-parser.add_argument("--q_emb_dir",
-                    type=str,
-                    default='./lstm_question_embedding',
-                    help="Directory for saved plots of question embeddinga")
 parser.add_argument("--gamma",
                     type=float,
                     default=0.95,
                     help="Discount rate for Q_target")
+parser.add_argument("--n_update_target_dqn",
+                    type=int,
+                    default=10,
+                    help="Mumber of episodes between updates of target dqn")
 parser.add_argument("--val_trials_wo_im",
                     type=int,
                     default=50,
@@ -93,21 +93,17 @@ parser.add_argument("--episode_length",
                     help="Episode length")
 parser.add_argument("--case",
                     type=int,
-                    default=123,
+                    default=122,
                     help="Which data to use")
 parser.add_argument("--env",
                     type=str,
                     default="Questionnaire",
                     help="environment name: Questionnaire")
-# environment params
-parser.add_argument("--state-dim",
+#### environment params
+parser.add_argument("--g_hidden-dim",
                     type=int,
-                    default=128,
-                    help="State dimension")
-parser.add_argument("--embedding-dim",
-                    type=int,
-                    default=64,
-                    help="Question embedding dimension")
+                    default=256,
+                    help="Guesser hidden dimension")
 parser.add_argument("--g_weight_decay",
                     type=float,
                     default=0e-4,
@@ -232,6 +228,7 @@ class Agent(object):
             hidden_dim (int): hidden dimension
         """
         self.dqn = DQN(input_dim, output_dim, hidden_dim)
+        self.target_dqn = DQN(input_dim, output_dim, hidden_dim)
         self.input_dim = input_dim
         self.output_dim = output_dim
 
@@ -243,6 +240,14 @@ class Agent(object):
         self.scheduler = lr_scheduler.LambdaLR(self.optim, 
                                                lr_lambda=lambda_rule)
         
+        self.update_target_dqn()
+        
+
+    def update_target_dqn(self):
+        
+        # hard copy model parameters to target model parameters
+        for param, target_param in zip(self.dqn.parameters(), self.target_dqn.parameters()):
+            target_param.data.copy_(param.data)
 
     def _to_variable(self, x: np.ndarray) -> torch.Tensor:
         """torch.Variable syntax helper
@@ -281,9 +286,20 @@ class Agent(object):
             torch.FloatTensor: 2-D Tensor of shape (n, output_dim)
         """
         states = self._to_variable(states.reshape(-1, self.input_dim))
-        states = states.to(device=device)
+        states = states.to(device) 
         self.dqn.train(mode=False)
         return self.dqn(states)
+    
+    def get_target_Q(self, states: np.ndarray) -> torch.FloatTensor:
+        """Returns `Q-value`
+        Args:
+            states (np.ndarray): 2-D Tensor of shape (n, input_dim)
+        Returns:
+            torch.FloatTensor: 2-D Tensor of shape (n, output_dim)
+        """
+        states = self._to_variable(states.reshape(-1, self.input_dim))
+        self.target_dqn.train(mode=False)
+        return self.target_dqn(states)
 
     def train(self, Q_pred: torch.FloatTensor, Q_true: torch.FloatTensor) -> float:
         """Computes `loss` and backpropagation
@@ -332,10 +348,10 @@ def train_helper(agent: Agent,
     done = np.array([x.done for x in minibatch])
 
     Q_predict = agent.get_Q(states)
-    Q_target = Q_predict.clone().data.cpu().numpy()
-    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.cpu().numpy(), axis=1) * ~done
+    Q_target = Q_predict.clone().data.numpy()
+    max_actions = np.argmax(agent.get_Q(next_states).data.numpy(), axis=1)
+    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * agent.get_target_Q(next_states)[np.arange(len(Q_target)), max_actions].data.numpy() * ~done
     Q_target = agent._to_variable(Q_target)
-    Q_target = Q_target.to(device=device)
 
     return agent.train(Q_predict, Q_target)
 
@@ -400,7 +416,7 @@ def get_env_dim(env) -> Tuple[int, int]:
         int: input_dim
         int: output_dim
     """
-    input_dim = env.guesser.state_dim
+    input_dim = 2 * env.n_questions
     output_dim = env.n_questions  + 1  
         
     return input_dim, output_dim
@@ -437,7 +453,6 @@ agent = Agent(input_dim,
               output_dim, 
               FLAGS.hidden_dim)    
 
-#set device
 agent.dqn.to(device=device)
 env.guesser.to(device=device)
     
@@ -485,16 +500,14 @@ def load_networks(i_episode: int,
     dqn_load_path = os.path.join(FLAGS.save_dir, dqn_filename)
     
     # load guesser
-    guesser = Guesser(embedding_dim=FLAGS.embedding_dim,
-                      state_dim=FLAGS.state_dim,
-                      n_questions=env.n_questions,
-                      num_classes=2,
+    guesser = Guesser(state_dim=2 * env.n_questions,
+                      hidden_dim=FLAGS.g_hidden_dim,
                       lr=FLAGS.lr,
                       min_lr=FLAGS.min_lr,
                       weight_decay=FLAGS.g_weight_decay,
                       decay_step_size=FLAGS.decay_step_size,
-                      lr_decay_factor=FLAGS.lr_decay_factor,
-                      device=device)
+                      lr_decay_factor=FLAGS.lr_decay_factor)
+ 
     
     guesser_state_dict = torch.load(guesser_load_path)
     guesser.load_state_dict(guesser_state_dict)
@@ -582,6 +595,9 @@ def main():
         if val_trials_without_improvement == FLAGS.val_trials_wo_im:
             print('Did not achieve val AUC improvement for {} trials, training is done.'.format(FLAGS.val_trials_wo_im))
             break
+        
+        if i % FLAGS.n_update_target_dqn == 0:
+                agent.update_target_dqn()
                 
             
 def val(i_episode: int, 
@@ -776,73 +792,39 @@ def show_sample_paths(n_patients=1):
                 print('Episode terminated\n')
                 break
 
-def plot_question_embeddings():
-    """ A method to plot PCA representation of the guesser's question embeddings"""
-     
-    # obtain question embeddings
-    guesser_filename = 'best_guesser.pth'
-    guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
-    guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.cpu().numpy()
+def predict_interactively():
+    """ Making predictions in interactive fashion """
     
-    # Do PCA
-    from sklearn.decomposition import PCA
-    pca = PCA(n_components=2, svd_solver='full')
-    X = pca.fit_transform(q_embedding)
+    print('Loading best networks')
+    env.guesser, agent.dqn = load_networks(i_episode='best')
     
-    # delete model files from previous runs
-    if os.path.exists(FLAGS.q_emb_dir):
-        shutil.rmtree(FLAGS.q_emb_dir)
-     
-    if not os.path.exists(FLAGS.q_emb_dir):
-        os.makedirs(FLAGS.q_emb_dir)
-            
-    # Create figure
-    import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(15, 8))
-    fig.suptitle('PCA embedding of the questions', fontsize=14)
-    ax = fig.add_subplot(111)
-    ax.scatter(X[:, 0], X[:, 1], c='r')
-    for i, txt in enumerate(env.question_names):
-        ax.annotate(txt, (X[:, 0][i], X[:, 1][i]))
-    plt.show()
-    fig.savefig(FLAGS.q_emb_dir + '/question embeddings.png')
+    state = env.reset(mode='interactive', 
+                          train_guesser=False)
+    mask = env.reset_mask()
     
-def print_nns(n_neighbors=3):
-    """ A method to print the nearest neighbors of each question in the embedding space"""
-     
-    # obtain question embeddings
-    guesser_filename = 'best_guesser.pth'
-    guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
-    guesser_state_dict = torch.load(guesser_load_path)
-    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.cpu().numpy()
+    # run episode
+    for t in range(FLAGS.episode_length):
+
+        # select action from policy
+        action = agent.get_action(state, eps=0, mask=mask)
+        mask[action] = 0
+        print('Step {}: '.format(t+1))
+        # take the action
+        state, reward, done, guess = env.step(action, mode='interactive') 
         
-    # Find nearest neighbors
-    from sklearn.neighbors import NearestNeighbors
-    nbrs = NearestNeighbors(n_neighbors=env.n_questions, 
-                            algorithm='ball_tree').fit(q_embedding)
-    distances, indices = nbrs.kneighbors(q_embedding)
-    threshold = np.percentile(distances[:,1], 10)
-    
-    # Print to console
-    print('Nearest neighbors for every question: ')
-    for i in range(env.n_questions):
-        printed = False
-        for j in range(1, env.n_questions):
-            if distances[i, j] < threshold:
-                if not printed:
-                    printed = True
-                    print(env.question_names[i], ':')
-                print('\t', env.question_names[indices[i, j]])
-    
+        if guess != -1:
+            print('Ready to make a guess: Prob(y=1)={:1.3f}, Guess: y={}'.format(env.outcome_prob, guess))
+                                       
+        if done:
+            print('Episode terminated\n')
+            break
     
 if __name__ == '__main__':
     main()
     test()
     show_sample_paths(2)
-    plot_question_embeddings()
-    
+    # predict_interactively()
 
 # This script should yield test AUC results in this spirit:      
-# 0.854
+# 0.859, 0.862, 0.861, 0.864, 0.863, 0.862
     
