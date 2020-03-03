@@ -56,7 +56,7 @@ parser.add_argument("--batch_size",
                     help="Mini-batch size")
 parser.add_argument("--hidden-dim",
                     type=int,
-                    default=256,
+                    default=128,
                     help="Hidden dimension")
 parser.add_argument("--capacity",
                     type=int,
@@ -76,7 +76,7 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--min_lr",
                     type=float,
-                    default=1e-5,
+                    default=5e-6,
                     help="Minimal learning rate")
 parser.add_argument("--decay_step_size",
                     type=int,
