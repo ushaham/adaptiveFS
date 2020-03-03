@@ -100,11 +100,12 @@ def plot_mnist_digit(digit,
     digit = digit.reshape(28, 28)
     fig=plt.figure()
     plt.title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=18)
-    fig.axes.get_xaxis.set_visible(False)
-    fig.axes.get_yaxis.set_visible(False)
+    ax1 = plt.axes()
+    ax1.axes.get_yaxis().set_visible(False)
+    ax1.axes.get_xaxis().set_visible(False)
     plt.imshow(digit, cmap='gray')
     if save:
-        fig.savefig('./'+ save_dir + '/im_' + str(fig_num) +'.png')
+        fig.savefig(save_dir + '/im_' + str(fig_num) +'.png')
         
 def scale_individual_value(val, ind, scaler):
     return (val - scaler.data_min_[ind]) / (scaler.data_max_[ind] - scaler.data_min_[ind]) * 2. - 1.
