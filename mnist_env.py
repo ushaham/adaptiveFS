@@ -10,6 +10,7 @@ Environment for MNIST
 import numpy as np
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import mutual_info_classif
 import gym
 import torch
 import torch.nn as nn
@@ -125,13 +126,11 @@ class Mnist_env(gym.Env):
                                                                                self.y_train, 
                                                                                test_size=0.008)
          
-         # Compute correlations with target   
-         correls = np.zeros(self.n_questions + 1)
-         for i in range(self.n_questions):
-             correls[i] = np.abs(np.corrcoef(self.y_train, self.X_train[:,i])[0,1])
-         correls[self.n_questions] = .1
-         correls = np.nan_to_num(correls)
-         self.action_probs = correls / np.sum(correls)
+         # Compute mutual information of each pixel with target   
+         print('Computing mutual information of each pixel with target')
+         mi = mutual_info_classif(self.X_train, self.y_train)
+         scores = np.append(mi, .1)
+         self.action_probs = scores / np.sum(scores)
          
          self.guesser = Guesser(state_dim=self.n_questions,
                                 hidden_dim=flags.g_hidden_dim,
