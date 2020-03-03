@@ -137,7 +137,7 @@ def save_network(i_episode, acc=None):
 n_questions = 28 * 28
 
 # Initialize guesser
-guesser = Guesser(n_questions)  
+guesser = Guesser(2 * n_questions)  
 guesser.to(device=device)      
        
 
@@ -169,7 +169,8 @@ def main():
     for i in count(1):
      patient = np.random.randint(X_train.shape[0])
      x = X_train[patient]
-     guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
+     x = np.concatenate([x, np.ones(n_questions)])
+     guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
      guesser_input = guesser_input.to(device=device)
      guesser.train(mode=False)
      logits, probs = guesser(guesser_input)
@@ -210,7 +211,8 @@ def val(i_episode : int,
     
     for i in range(len(X_val)):
         x = X_val[i]
-        guesser_input = guesser._to_variable(x.reshape(-1, n_questions))
+        x = np.concatenate([x, np.ones(n_questions)])
+        guesser_input = guesser._to_variable(x.reshape(-1, 2 * n_questions))
         guesser_input = guesser_input.to(device=device)
         guesser.train(mode=False)
         logits, probs = guesser(guesser_input)

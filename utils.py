@@ -74,8 +74,14 @@ def load_mnist(case=1):
        X_test = X_test[test_inds]
        y_train = y_train[train_inds]
        y_test = y_test[test_inds]
-       
+    
     return X_train / 127.5 - 1., X_test / 127.5 - 1, y_train, y_test
+
+def load_mi_scores():
+    if os.path.exists('./mnist/mi.npy'):
+        return np.load('./mnist/mi.npy')
+    else:
+        return None
 
 def read_idx(filename):
     with gzip.open(filename, 'rb') as f:
@@ -93,7 +99,9 @@ def plot_mnist_digit(digit,
     import matplotlib.pyplot as plt
     digit = digit.reshape(28, 28)
     fig=plt.figure()
-    plt.title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=15)
+    plt.title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=18)
+    fig.axes.get_xaxis.set_visible(False)
+    fig.axes.get_yaxis.set_visible(False)
     plt.imshow(digit, cmap='gray')
     if save:
         fig.savefig('./'+ save_dir + '/im_' + str(fig_num) +'.png')

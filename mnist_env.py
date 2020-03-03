@@ -126,13 +126,16 @@ class Mnist_env(gym.Env):
                                                                                self.y_train, 
                                                                                test_size=0.008)
          
-         # Compute mutual information of each pixel with target   
-         print('Computing mutual information of each pixel with target')
-         mi = mutual_info_classif(self.X_train, self.y_train)
+         # Load / compute mutual information of each pixel with target   
+         mi = utils.load_mi_scores()
+         if mi is None:
+             print('Computing mutual information of each pixel with target')
+             mi = mutual_info_classif(self.X_train, self.y_train)
+             np.save('./mnist/mi.npy', mi)
          scores = np.append(mi, .1)
          self.action_probs = scores / np.sum(scores)
          
-         self.guesser = Guesser(state_dim=self.n_questions,
+         self.guesser = Guesser(state_dim= 2 * self.n_questions,
                                 hidden_dim=flags.g_hidden_dim,
                                 lr=flags.lr,
                                 min_lr=flags.min_lr,
@@ -170,7 +173,7 @@ class Mnist_env(gym.Env):
          Resets 'train_guesser' flag
          """
          
-         self.state =  np.zeros(self.n_questions)
+         self.state =  np.concatenate([np.zeros(self.n_questions), np.zeros(self.n_questions)])
         
          if  mode == 'training':
              self.patient = np.random.randint(self.X_train.shape[0])              
@@ -228,13 +231,14 @@ class Mnist_env(gym.Env):
              elif mode == 'val':
                  next_state[action] = self.X_val[self.patient, action]
              elif mode == 'test': 
-                 next_state[action] = self.X_test[self.patient, action]           
+                 next_state[action] = self.X_test[self.patient, action]   
+             next_state[action + self.n_questions] += 1.
              self.guess = -1
              self.done = False
              
          else: # Making a guess
               # run guesser, and store guess and outcome probability
-              guesser_input = self.guesser._to_variable(self.state.reshape(-1, self.n_questions))
+              guesser_input = self.guesser._to_variable(self.state.reshape(-1, 2 * self.n_questions))
               if torch.cuda.is_available():
                   guesser_input = guesser_input.cuda()
               self.guesser.train(mode=False)

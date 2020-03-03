@@ -28,7 +28,7 @@ import utils
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--save_dir",
                     type=str,
-                    default='./mnist_dqn_models',
+                    default='./mnist_ddqn_models',
                     help="Directory for saved models")
 parser.add_argument("--masked_images_dir",
                     type=str,
@@ -38,6 +38,10 @@ parser.add_argument("--gamma",
                     type=float,
                     default=0.9,
                     help="Discount rate for Q_target")
+parser.add_argument("--n_update_target_dqn",
+                    type=int,
+                    default=10,
+                    help="Mumber of episodes between updates of target dqn")
 parser.add_argument("--val_trials_wo_im",
                     type=int,
                     default=50,
@@ -72,7 +76,7 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--min_lr",
                     type=float,
-                    default=1e-7,
+                    default=1e-5,
                     help="Minimal learning rate")
 parser.add_argument("--decay_step_size",
                     type=int,
@@ -233,6 +237,7 @@ class Agent(object):
             hidden_dim (int): hidden dimension
         """
         self.dqn = DQN(input_dim, output_dim, hidden_dim)
+        self.target_dqn = DQN(input_dim, output_dim, hidden_dim)
         self.input_dim = input_dim
         self.output_dim = output_dim
 
@@ -244,6 +249,14 @@ class Agent(object):
         self.scheduler = lr_scheduler.LambdaLR(self.optim, 
                                                lr_lambda=lambda_rule)
         
+        self.update_target_dqn()
+        
+
+    def update_target_dqn(self):
+        
+        # hard copy model parameters to target model parameters
+        for param, target_param in zip(self.dqn.parameters(), self.target_dqn.parameters()):
+            target_param.data.copy_(param.data)
 
     def _to_variable(self, x: np.ndarray) -> torch.Tensor:
         """torch.Variable syntax helper
@@ -267,7 +280,8 @@ class Agent(object):
         """
         if np.random.rand() < eps:
             if np.random.rand() < .5:
-                return np.random.choice(self.output_dim)
+                #return np.random.choice(self.output_dim)
+                return np.random.choice(self.output_dim, p=env.action_probs)
             else:
                 return self.output_dim - 1
         else:
@@ -287,6 +301,17 @@ class Agent(object):
         states = states.to(device=device)
         self.dqn.train(mode=False)
         return self.dqn(states)
+    
+    def get_target_Q(self, states: np.ndarray) -> torch.FloatTensor:
+        """Returns `Q-value`
+        Args:
+            states (np.ndarray): 2-D Tensor of shape (n, input_dim)
+        Returns:
+            torch.FloatTensor: 2-D Tensor of shape (n, output_dim)
+        """
+        states = self._to_variable(states.reshape(-1, self.input_dim))
+        self.target_dqn.train(mode=False)
+        return self.target_dqn(states)
 
     def train(self, Q_pred: torch.FloatTensor, Q_true: torch.FloatTensor) -> float:
         """Computes `loss` and backpropagation
@@ -335,10 +360,11 @@ def train_helper(agent: Agent,
     done = np.array([x.done for x in minibatch])
 
     Q_predict = agent.get_Q(states)
-    Q_target = Q_predict.clone().data.cpu().numpy()
-    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * np.max(agent.get_Q(next_states).data.cpu().numpy(), axis=1) * ~done
+    Q_target = Q_predict.clone().data.numpy()
+    max_actions = np.argmax(agent.get_Q(next_states).data.numpy(), axis=1)
+    Q_target[np.arange(len(Q_target)), actions] = rewards + gamma * agent.get_target_Q(next_states)[np.arange(len(Q_target)), max_actions].data.numpy() * ~done
     Q_target = agent._to_variable(Q_target)
-    Q_target = Q_target.to(device=device)
+
 
     return agent.train(Q_predict, Q_target)
 
@@ -403,7 +429,7 @@ def get_env_dim(env) -> Tuple[int, int]:
         int: input_dim
         int: output_dim
     """
-    input_dim = env.n_questions
+    input_dim = 2 * env.n_questions
     output_dim = env.n_questions  + 1  
         
     return input_dim, output_dim
@@ -487,7 +513,7 @@ def load_networks(i_episode: int,
     dqn_load_path = os.path.join(FLAGS.save_dir, dqn_filename)
     
     # load guesser
-    guesser = Guesser(state_dim=env.n_questions,
+    guesser = Guesser(state_dim=2 * env.n_questions,
                       hidden_dim=FLAGS.g_hidden_dim,
                       lr=FLAGS.lr,
                       min_lr=FLAGS.min_lr,
@@ -582,7 +608,9 @@ def main():
             print('Did not achieve val acc improvement for {} trials, training is done.'.format(FLAGS.val_trials_wo_im))
             break
                 
-            
+        if i % FLAGS.n_update_target_dqn == 0:
+                agent.update_target_dqn()    
+        
 def val(i_episode: int, 
         best_val_acc: float) -> float:
     """ Compute performance on validation set and save current models """
