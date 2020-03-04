@@ -641,12 +641,13 @@ def val(i_episode: int,
     
     # update AUROC score
     roc_auc_score_ = roc_auc_score(env.y_val,  y_hat_val_prob)
-    save_networks(i_episode, roc_auc_score_)
+    
     
     # Save best performing model, if needed
     if roc_auc_score_ > best_val_auc:
         print('New best AUC acheievd, saving best model')
         save_networks(i_episode='best')
+        save_networks(i_episode, roc_auc_score_)
         
         return roc_auc_score_
     

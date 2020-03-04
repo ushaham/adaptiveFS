@@ -231,11 +231,12 @@ def val(i_episode : int,
         y_hat_val_prob[i] = probs.squeeze()[1].item()
 
     roc_auc_score_ = roc_auc_score(y_val,  y_hat_val_prob)
-    save_network(i_episode, roc_auc_score_)
+    
     
     if roc_auc_score_ > best_val_auc:
         print('New best AUC acheievd, saving best model')
         save_network(i_episode='best')
+        save_network(i_episode, roc_auc_score_)
         
         return roc_auc_score_
     
