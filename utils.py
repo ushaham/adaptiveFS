@@ -79,6 +79,7 @@ def load_mnist(case=1):
 
 def load_mi_scores():
     if os.path.exists('./mnist/mi.npy'):
+        print('Loading stored mutual information scores')
         return np.load('./mnist/mi.npy')
     else:
         return None

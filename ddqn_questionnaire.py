@@ -825,7 +825,3 @@ if __name__ == '__main__':
     test()
     show_sample_paths(2)
     # predict_interactively()
-
-# This script should yield test AUC results in this spirit:      
-# 0.859, 0.862, 0.861, 0.864, 0.863, 0.862
-    
