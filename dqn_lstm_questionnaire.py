@@ -16,7 +16,8 @@ from collections import namedtuple
 from collections import deque
 from typing import List, Tuple
 from itertools import count
-from sklearn.metrics import confusion_matrix, roc_auc_score
+from sklearn.metrics import confusion_matrix, roc_auc_score, pairwise
+import matplotlib.pyplot as plt
 
 
 from questionnaire_lstm_env import Questionnaire_env
@@ -69,7 +70,7 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--min_lr",
                     type=float,
-                    default=1e-7,
+                    default=1e-6,
                     help="Minimal learning rate")
 parser.add_argument("--decay_step_size",
                     type=int,
@@ -106,7 +107,7 @@ parser.add_argument("--state-dim",
                     help="State dimension")
 parser.add_argument("--embedding-dim",
                     type=int,
-                    default=64,
+                    default=128,
                     help="Question embedding dimension")
 parser.add_argument("--g_weight_decay",
                     type=float,
@@ -799,15 +800,42 @@ def plot_question_embeddings():
         os.makedirs(FLAGS.q_emb_dir)
             
     # Create figure
-    import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(15, 8))
-    fig.suptitle('PCA embedding of the questions', fontsize=14)
     ax = fig.add_subplot(111)
     ax.scatter(X[:, 0], X[:, 1], c='r')
     for i, txt in enumerate(env.question_names):
-        ax.annotate(txt, (X[:, 0][i], X[:, 1][i]))
+        ax.annotate(txt, (X[:, 0][i], X[:, 1][i]), size=10)
+    plt.xlabel('PC1', fontsize=20)
+    plt.ylabel('PC2', fontsize=20)
+    ax1 = plt.axes()
+    #ax1.axes.get_yaxis().set_visible(False)
+    #ax1.axes.get_xaxis().set_visible(False)
     plt.show()
     fig.savefig(FLAGS.q_emb_dir + '/question embeddings.png')
+    
+    K = pairwise.cosine_similarity(q_embedding)
+    print('large positive cosine:')
+    rows, cols = np.where(K >.25 )
+    for i in range(len(rows)):
+        if rows[i] != cols[i]:
+            f1 = env.question_names[rows[i]]
+            f2 = env.question_names[cols[i]]
+            print('feature 1: {}, feature 2: {}, cos={:.3f}'.format(f1, 
+                                                                    f2, 
+                                                                    K[rows[i], cols[i]]))
+    
+    print('large negative cosine:')
+    rows, cols = np.where(K < -.25)                                 
+    for i in range(len(rows)):
+        if rows[i] != cols[i]:
+            f1 = env.question_names[rows[i]]
+            f2 = env.question_names[cols[i]]
+            print('feature 1: {}, feature 2: {}, cos={:.3f}'.format(f1, 
+                                                                    f2, 
+                                                                    K[rows[i], cols[i]]))
+    
+        
+    
     
 def print_nns(n_neighbors=3):
     """ A method to print the nearest neighbors of each question in the embedding space"""
@@ -835,13 +863,36 @@ def print_nns(n_neighbors=3):
                     printed = True
                     print(env.question_names[i], ':')
                 print('\t', env.question_names[indices[i, j]])
+'''                
+def analogies(n_neighbors=3):
+    """ A method to print the nearest neighbors of each question in the embedding space"""
+     
+    # obtain question embeddings
+    guesser_filename = 'best_guesser.pth'
+    guesser_load_path = os.path.join(FLAGS.save_dir, guesser_filename)    
+    guesser_state_dict = torch.load(guesser_load_path)
+    q_embedding = guesser_state_dict['q_emb.weight'][:-1].data.cpu().numpy()
+        
+    # Find nearest neighbors
+    from sklearn.neighbors import NearestNeighbors
+    nbrs = NearestNeighbors(n_neighbors=env.n_questions, 
+                            algorithm='ball_tree').fit(q_embedding)
     
+    phstat1 = q_embedding[np.where(env.question_names == 'phstat1')[0][0], :]
+    phstat5 = q_embedding[np.where(env.question_names == 'phstat5')[0][0], :]
+    feature = q_embedding[np.where(env.question_names == 'phstat4')[0][0], :]
+    x = feature - phstat5 + phstat1
+    _, indices = nbrs.kneighbors(np.expand_dims(x, 0))
+    print('Nearest neighbor is: {}'.format(env.question_names[indices[0, 0]]))
+
+'''    
     
 if __name__ == '__main__':
     main()
     test()
     show_sample_paths(2)
     plot_question_embeddings()
+    print_nns()
     
 
 # This script should yield test AUC results in this spirit:      
