@@ -124,7 +124,7 @@ class Mnist_env(gym.Env):
          
          self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, 
                                                                                self.y_train, 
-                                                                               test_size=0.008)
+                                                                               test_size=0.017)
          
          # Load / compute mutual information of each pixel with target   
          mi = utils.load_mi_scores()

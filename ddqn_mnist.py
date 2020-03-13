@@ -36,7 +36,7 @@ parser.add_argument("--masked_images_dir",
                     help="Directory for saved masked images")
 parser.add_argument("--gamma",
                     type=float,
-                    default=0.9,
+                    default=0.85,
                     help="Discount rate for Q_target")
 parser.add_argument("--n_update_target_dqn",
                     type=int,
@@ -56,7 +56,7 @@ parser.add_argument("--batch_size",
                     help="Mini-batch size")
 parser.add_argument("--hidden-dim",
                     type=int,
-                    default=128,
+                    default=64,
                     help="Hidden dimension")
 parser.add_argument("--capacity",
                     type=int,
@@ -76,11 +76,11 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--min_lr",
                     type=float,
-                    default=5e-6,
+                    default=1e-5,
                     help="Minimal learning rate")
 parser.add_argument("--decay_step_size",
                     type=int,
-                    default=12500,
+                    default=50000,
                     help="LR decay step size")
 parser.add_argument("--lr_decay_factor",
                     type=float,
@@ -88,7 +88,7 @@ parser.add_argument("--lr_decay_factor",
                     help="LR decay factor")
 parser.add_argument("--weight_decay",
                     type=float,
-                    default=0.,
+                    default=0e-4,
                     help="l_2 weight penalty")
 parser.add_argument("--val_interval",
                     type=int,
@@ -146,7 +146,12 @@ class DQN(torch.nn.Module):
         self.layer2 = torch.nn.Sequential(
             torch.nn.Linear(hidden_dim, hidden_dim),
             torch.nn.ReLU(),
-        )        
+        )    
+        
+        self.layer3 = torch.nn.Sequential(
+            torch.nn.Linear(hidden_dim, hidden_dim),
+            torch.nn.ReLU(),
+        )    
 
         if FLAGS.env == 'Questionnaire':
             self.final = torch.nn.Sequential(
@@ -165,6 +170,7 @@ class DQN(torch.nn.Module):
         """
         x = self.layer1(x)
         x = self.layer2(x)
+        x = self.layer3(x)
         x = self.final(x)
 
         return x
