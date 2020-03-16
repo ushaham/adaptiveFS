@@ -11,6 +11,7 @@ import struct
 import os
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 
 
 def load_data (case):
@@ -78,11 +79,22 @@ def load_mnist(case=1):
     return X_train / 127.5 - 1., X_test / 127.5 - 1, y_train, y_test
 
 def load_mi_scores():
+    '''
     if os.path.exists('./mnist/mi.npy'):
         print('Loading stored mutual information scores')
         return np.load('./mnist/mi.npy')
     else:
         return None
+    '''
+    X_train, X_test, y_train, y_test = load_mnist(case=2)    
+    max_depth = 5
+    
+    # define a decision tree classifier
+    clf = DecisionTreeClassifier(max_depth=max_depth)    
+
+    # fit model
+    clf = clf.fit(X_train, y_train)
+    return clf.feature_importances_
 
 def read_idx(filename):
     with gzip.open(filename, 'rb') as f:
@@ -96,15 +108,22 @@ def plot_mnist_digit(digit,
                      num_steps, 
                      save=True, 
                      fig_num=0,
-                     save_dir='.'):
+                     save_dir='.',
+                     actions=None):
     import matplotlib.pyplot as plt
     digit = digit.reshape(28, 28)
-    fig=plt.figure()
-    plt.title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=18)
-    ax1 = plt.axes()
-    ax1.axes.get_yaxis().set_visible(False)
-    ax1.axes.get_xaxis().set_visible(False)
-    plt.imshow(digit, cmap='gray')
+    fig, ax = plt.subplots()
+    ax.set_title('true label: {}, guess: {}, num steps: {}'.format(true_label, guess, num_steps), fontsize=18)
+    ax.get_yaxis().set_visible(False)
+    ax.get_xaxis().set_visible(False)
+    im = ax.imshow(digit, cmap='gray')
+    if actions is not None:
+        for i, a in enumerate(actions):
+            if a != 784:
+                row = a % 28
+                col = int(a / 28)
+                text = ax.text(row, col - 2, i, ha="center", va="center", color="b", size=15)  
+    plt.show()
     if save:
         fig.savefig(save_dir + '/im_' + str(fig_num) +'.png')
         
