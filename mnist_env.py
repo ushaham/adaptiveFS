@@ -11,6 +11,8 @@ import numpy as np
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import mutual_info_classif
+from sklearn.tree import DecisionTreeClassifier
+
 import gym
 import torch
 import torch.nn as nn

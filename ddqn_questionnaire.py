@@ -37,7 +37,7 @@ parser.add_argument("--n_update_target_dqn",
                     help="Mumber of episodes between updates of target dqn")
 parser.add_argument("--val_trials_wo_im",
                     type=int,
-                    default=50,
+                    default=100,
                     help="Number of validation trials without improvement")
 parser.add_argument("--ep_per_trainee",
                     type=int,
@@ -69,11 +69,11 @@ parser.add_argument("--lr",
                     help="Learning rate")
 parser.add_argument("--min_lr",
                     type=float,
-                    default=1e-7,
+                    default=1e-6,
                     help="Minimal learning rate")
 parser.add_argument("--decay_step_size",
                     type=int,
-                    default=12500,
+                    default=17500,
                     help="LR decay step size")
 parser.add_argument("--lr_decay_factor",
                     type=float,
@@ -89,7 +89,7 @@ parser.add_argument("--val_interval",
                     help="Interval for calculating validation reward and saving model")
 parser.add_argument("--episode_length",
                     type=int,
-                    default=7,
+                    default=11,
                     help="Episode length")
 parser.add_argument("--case",
                     type=int,

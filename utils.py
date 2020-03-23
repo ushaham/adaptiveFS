@@ -122,7 +122,7 @@ def plot_mnist_digit(digit,
             if a != 784:
                 row = a % 28
                 col = int(a / 28)
-                text = ax.text(row, col - 2, i, ha="center", va="center", color="b", size=15)  
+                text = ax.text(row, col - 2, i + 1, ha="center", va="center", color="b", size=15)  
     plt.show()
     if save:
         fig.savefig(save_dir + '/im_' + str(fig_num) +'.png')

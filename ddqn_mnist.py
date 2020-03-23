@@ -44,7 +44,7 @@ parser.add_argument("--n_update_target_dqn",
                     help="Mumber of episodes between updates of target dqn")
 parser.add_argument("--val_trials_wo_im",
                     type=int,
-                    default=50,
+                    default=200,
                     help="Number of validation trials without improvement")
 parser.add_argument("--ep_per_trainee",
                     type=int,
@@ -285,8 +285,10 @@ class Agent(object):
             int: action index
         """
         if np.random.rand() < eps:
-            if np.random.rand() < .5:
-                #return np.random.choice(self.output_dim)
+            r = np.random.rand()
+            if r < .2:
+                return np.random.choice(self.output_dim)
+            elif r < .6:
                 return np.random.choice(self.output_dim, p=env.action_probs)
             else:
                 return self.output_dim - 1
@@ -544,7 +546,8 @@ def main():
     
     # delete model files from previous runs
     if os.path.exists(FLAGS.save_dir):
-        shutil.rmtree(FLAGS.save_dir)
+        env.guesser, agent.dqn = load_networks(i_episode='best')
+        #shutil.rmtree(FLAGS.save_dir)
         
     # store best result
     best_val_acc = 0
@@ -609,10 +612,13 @@ def main():
             else:
                 val_trials_without_improvement += 1
                 
+        if val_trials_without_improvement == int(FLAGS.val_trials_wo_im / 2):
+            env.guesser, agent.dqn = load_networks(i_episode='best')
+                
         # check whether to stop training
-        if val_trials_without_improvement == FLAGS.val_trials_wo_im:
-            print('Did not achieve val acc improvement for {} trials, training is done.'.format(FLAGS.val_trials_wo_im))
-            break
+        #if val_trials_without_improvement == FLAGS.val_trials_wo_im:
+        #    print('Did not achieve val acc improvement for {} trials, training is done.'.format(FLAGS.val_trials_wo_im))
+        #    break
                 
         if i % FLAGS.n_update_target_dqn == 0:
                 agent.update_target_dqn()    
@@ -760,7 +766,8 @@ def view_images(nun_images=10, save=True):
                                num_steps=t,
                                save=save, 
                                fig_num=i,
-                               save_dir=FLAGS.masked_images_dir)
+                               save_dir=FLAGS.masked_images_dir,
+                               actions=actions)
     
 if __name__ == '__main__':
     main()
