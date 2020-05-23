@@ -37,7 +37,7 @@ parser.add_argument("--n_update_target_dqn",
                     help="Mumber of episodes between updates of target dqn")
 parser.add_argument("--val_trials_wo_im",
                     type=int,
-                    default=100,
+                    default=50,
                     help="Number of validation trials without improvement")
 parser.add_argument("--ep_per_trainee",
                     type=int,
@@ -53,7 +53,7 @@ parser.add_argument("--hidden-dim",
                     help="Hidden dimension")
 parser.add_argument("--capacity",
                     type=int,
-                    default=10000,
+                    default=1000,
                     help="Replay memory capacity")
 parser.add_argument("--max-episode",
                     type=int,
@@ -61,7 +61,7 @@ parser.add_argument("--max-episode",
                     help="e-Greedy target episode (eps will be the lowest at this episode)")
 parser.add_argument("--min-eps",
                     type=float,
-                    default=0.01,
+                    default=0.05,
                     help="Min epsilon")
 parser.add_argument("--lr",
                     type=float,
@@ -89,7 +89,7 @@ parser.add_argument("--val_interval",
                     help="Interval for calculating validation reward and saving model")
 parser.add_argument("--episode_length",
                     type=int,
-                    default=11,
+                    default=8,
                     help="Episode length")
 parser.add_argument("--case",
                     type=int,
