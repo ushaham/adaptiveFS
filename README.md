@@ -10,8 +10,5 @@ pretrain guesser:
 >>> python pretrain_guesser.py
 
 train RL agent: 
->>> python dqn_questionnaire.py
+>>> python ddqn_questionnaire.py
 
-
-
-"# adaptiveFS" 
